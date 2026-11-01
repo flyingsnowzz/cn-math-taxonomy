@@ -1,0 +1,47 @@
+{
+  "name": "cn-math-taxonomy-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Vue 3 frontend for the cn-math-taxonomy static knowledge graph.",
+  "scripts": {
+    "data:build": "node scripts/build-data-packages.mjs",
+    "predev": "npm run data:build",
+    "dev": "vite",
+    "prebuild": "npm run data:build",
+    "build": "vue-tsc --noEmit -p tsconfig.app.json && vite build && node scripts/generate-sw.mjs && node scripts/copy-data.mjs",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "preview": "vite preview",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "cytoscape": "^3.34.4",
+    "cytoscape-dagre": "^4.0.1",
+    "dagre": "^0.8.5",
+    "pinia": "^4.1.0",
+    "qrcode-generator": "^2.0.4",
+    "vue": "^3.5.44",
+    "vue-router": "^5.4.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/cytoscape": "^3.21.9",
+    "@types/dagre": "^0.7.54",
+    "@types/node": "^26.6.6",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "@vue/eslint-config-typescript": "^14.9.0",
+    "eslint": "^10.14.0",
+    "eslint-plugin-vue": "^10.12.0",
+    "globals": "^17.14.0",
+    "jsdom": "^30.1.3",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5",
+    "vue-tsc": "^3.3.14"
+  }
+}
