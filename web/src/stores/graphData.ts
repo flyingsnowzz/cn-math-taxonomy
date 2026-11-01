@@ -18,20 +18,26 @@ export const useGraphDataStore = defineStore('graph-data', () => {
   const loadedSubject = ref<SubjectCode | null>(null)
   const state = ref<LoadState>('idle')
   const errorMessage = ref('')
+  let requestSerial = 0
 
   async function load(subject: SubjectCode, signal?: AbortSignal) {
     if (dataset.value && loadedSubject.value === subject) return dataset.value
+    const requestId = ++requestSerial
     state.value = 'loading'
     errorMessage.value = ''
     try {
-      dataset.value = await loadSubjectDataset(subject, signal)
+      const nextDataset = await loadSubjectDataset(subject, signal)
+      if (requestId !== requestSerial) return dataset.value
+      dataset.value = nextDataset
       loadedSubject.value = subject
       state.value = 'success'
       return dataset.value
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') throw error
-      state.value = 'error'
-      errorMessage.value = error instanceof Error ? error.message : '数据加载失败'
+      if (requestId === requestSerial) {
+        state.value = 'error'
+        errorMessage.value = error instanceof Error ? error.message : '数据加载失败'
+      }
       throw error
     }
   }

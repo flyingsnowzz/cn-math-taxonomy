@@ -1,6 +1,6 @@
 # Vue 3 展示层迁移目标文档（Codex 目标模式）
 
-> 状态：执行中（Vue 3 工程、核心页面、诊断、章节、分享图、分包、PWA 与 E2E 已落地；待产品视觉验收和生产切换）  
+> 状态：待人工验收（Vue 3 展示层功能与自动化验收已完成，预览部署和生产切换仍需授权）  
 > 创建时间：2026-11-01 21:47（Asia/Shanghai）  
 > 技术栈决策：Vue 3 + Vite + Vue Router + Pinia + Tailwind CSS + TypeScript  
 > 目标执行者：Codex  

@@ -1,6 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
-import { subjectFromTopicId } from '@/data/subjectRegistry'
+import type { RouteRecordRaw } from 'vue-router'
+import {
+  normalizeDiagnoseSubject,
+  redirectLegacyFileRoute,
+  redirectLegacyHash,
+} from './legacyRoutes'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', name: 'home', component: () => import('@/pages/HomePage.vue'), meta: { title: '首页' } },
@@ -15,21 +19,21 @@ const routes: RouteRecordRaw[] = [
     path: '/diagnose/',
     name: 'diagnose',
     component: () => import('@/pages/DiagnosePage.vue'),
-    alias: '/diagnose',
+    alias: ['/diagnose', '/diagnose/index.html', '/diagnose.html'],
     meta: { title: '诊断' },
   },
   {
     path: '/children/',
     name: 'children',
     component: () => import('@/pages/ChildrenPage.vue'),
-    alias: '/children',
+    alias: ['/children', '/children/index.html', '/children.html'],
     meta: { title: '孩子档案' },
   },
   {
     path: '/children/history/',
     name: 'children-history',
     component: () => import('@/pages/ChildrenHistoryPage.vue'),
-    alias: '/children/history',
+    alias: ['/children/history', '/children/history.html', '/children/history/index.html'],
     meta: { title: '诊断历史' },
   },
   { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/pages/NotFoundPage.vue') },
@@ -43,20 +47,11 @@ const router = createRouter({
   },
 })
 
-function redirectLegacyHash(to: RouteLocationNormalized) {
-  if (to.path !== '/' || !to.hash) return undefined
-  const topicId = decodeURIComponent(to.hash.replace(/^#/, ''))
-  const subject = subjectFromTopicId(topicId)
-  if (!subject) return undefined
-  return {
-    path: '/explore/',
-    query: { ...to.query, subject },
-    hash: `#${encodeURIComponent(topicId)}`,
-    replace: true,
-  }
-}
-
-router.beforeEach((to) => redirectLegacyHash(to))
+router.beforeEach((to) => (
+  redirectLegacyFileRoute(to)
+  ?? normalizeDiagnoseSubject(to)
+  ?? redirectLegacyHash(to)
+))
 router.afterEach((to) => {
   document.title = `${String(to.meta.title ?? '知识图谱')} · 中小学知识图谱`
 })

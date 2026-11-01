@@ -4,6 +4,7 @@ import engine, {
   type EngineGraph,
   type EngineNextItem,
   type EngineSession,
+  type EngineChapterSummary,
   type EngineSummary,
 } from './legacy/diagEngine.js'
 
@@ -12,6 +13,7 @@ export type {
   EngineGraph,
   EngineNextItem,
   EngineSession,
+  EngineChapterSummary,
   EngineSummary,
 } from './legacy/diagEngine.js'
 
@@ -58,6 +60,10 @@ export function applyAnswer(
 
 export function summarize(graph: EngineGraph, session: EngineSession): EngineSummary {
   return engine.summarize(graph, session)
+}
+
+export function chapterSummary(graph: EngineGraph, session: EngineSession): EngineChapterSummary[] {
+  return engine.chapterSummary(graph, session)
 }
 
 export function replay(

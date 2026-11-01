@@ -53,6 +53,7 @@ export interface DependencyEdge {
 export interface QuestionChoice {
   key: string
   text: string
+  figure?: string
 }
 
 export interface Question {
@@ -66,6 +67,8 @@ export interface Question {
   explanation?: string
   verify?: string
   accept?: string[]
+  figure?: string
+  hideChoiceText?: boolean
 }
 
 export interface CurriculumStandardItem {

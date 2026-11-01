@@ -15,7 +15,14 @@ npm ci
 npm run lint
 npm run typecheck
 npm run test
+npm run test:e2e
 npm run build
+
+if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+  echo "CLOUDFLARE_API_TOKEN is required for preview deployment." >&2
+  echo "Build and validation passed; skipping remote deployment." >&2
+  exit 2
+fi
 
 echo "Deploying $ROOT/dist to Cloudflare Pages branch: $BRANCH"
 npx --yes wrangler@4.86.0 pages deploy "$ROOT/dist" \

@@ -6,6 +6,7 @@ import LoadingState from '@/components/base/LoadingState.vue'
 import { normalizeSubject } from '@/data/subjectRegistry'
 import { useSubjectStore } from '@/stores/subject'
 import { useGraphDataStore } from '@/stores/graphData'
+import { useBlindspotsStore } from '@/stores/blindspots'
 import { loadStats, type GlobalStats } from '@/data/dataClient'
 import type { SubjectCode } from '@/data/types'
 
@@ -13,6 +14,7 @@ const route = useRoute()
 const router = useRouter()
 const subjectStore = useSubjectStore()
 const graphStore = useGraphDataStore()
+const blindspotsStore = useBlindspotsStore()
 const loadToken = ref(0)
 
 const subject = computed<SubjectCode>(() => normalizeSubject(route.query.subject))
@@ -21,6 +23,8 @@ const edges = computed(() => graphStore.edgesFor(subject.value))
 const globalStats = ref<GlobalStats | null>(null)
 const questionCount = computed(() => globalStats.value?.subjects[subject.value]?.questions ?? 0)
 const standards = computed(() => graphStore.standardsFor(subject.value))
+
+const blindRows = computed(() => blindspotsStore.list(subject.value, 5))
 
 const gradeGroups = computed(() => {
   const groups = new Map<number, { grade: number; count: number }>()
@@ -50,6 +54,9 @@ function switchSubject(code: SubjectCode) {
 }
 
 watch(subject, (value) => subjectStore.setSubject(value), { immediate: true })
+watch(subject, (value, previousValue) => {
+  if (previousValue && value !== previousValue) void load()
+})
 onMounted(load)
 </script>
 
@@ -63,7 +70,7 @@ onMounted(load)
             先找到真正没有学会的那一步
           </h1>
           <p class="mt-5 max-w-3xl text-base leading-8 text-slate-600">
-            沿知识点先修关系浏览课程结构，并在后续迁移中接入原有自适应诊断引擎。当前新版直接读取仓库中的正式 JSON 数据，Python 构建脚本和知识图谱生产流程保持不变。
+            沿知识点先修关系浏览课程结构，并使用原有确定性诊断引擎进行自适应诊断。新版读取构建生成的静态学科数据包，Python 构建脚本和知识图谱生产流程保持不变。
           </p>
           <div class="mt-7 flex flex-wrap gap-3">
             <RouterLink
@@ -109,7 +116,7 @@ onMounted(load)
 
       <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <div class="text-3xl font-bold text-slate-950">{{ topics.length }}</div>
+          <div class="text-3xl font-bold text-slate-950" data-testid="home-topic-count">{{ topics.length }}</div>
           <div class="mt-1 text-sm text-slate-500">知识点</div>
         </div>
         <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
@@ -117,12 +124,41 @@ onMounted(load)
           <div class="mt-1 text-sm text-slate-500">学科内先修边</div>
         </div>
         <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <div class="text-3xl font-bold text-slate-950">{{ questionCount }}</div>
+          <div class="text-3xl font-bold text-slate-950" data-testid="home-question-count">{{ questionCount }}</div>
           <div class="mt-1 text-sm text-slate-500">题目</div>
         </div>
         <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div class="text-3xl font-bold text-slate-950">{{ standards.length }}</div>
           <div class="mt-1 text-sm text-slate-500">关联课标条目</div>
+        </div>
+      </section>
+
+
+      <section v-if="blindRows.length" class="rounded-3xl border border-amber-200 bg-amber-50 p-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-bold text-amber-950">本机薄弱点</h2>
+            <p class="mt-1 text-sm text-amber-800">来自未完成会话、诊断结果和当前孩子档案，不会上传。</p>
+          </div>
+          <RouterLink
+            :to="blindspotsStore.diagnoseHref(blindRows.slice(0, 8).map((row) => row.id), subject)"
+            class="rounded-xl bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800"
+          >
+            一键再测
+          </RouterLink>
+        </div>
+        <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <RouterLink
+            v-for="row in blindRows"
+            :key="row.id"
+            :to="blindspotsStore.diagnoseHref([row.id], subject)"
+            class="rounded-2xl bg-white/80 p-3 text-sm shadow-sm ring-1 ring-amber-100 transition hover:bg-white"
+          >
+            <span class="font-semibold text-slate-900">{{ row.label || row.id }}</span>
+            <span class="mt-1 block text-xs" :class="row.status === 'weak' ? 'text-red-700' : 'text-amber-700'">
+              {{ row.status === 'weak' ? '薄弱' : '不稳' }} · {{ row.source === 'child' ? '孩子档案' : row.source === 'session' ? '未完成会话' : '本机账本' }}
+            </span>
+          </RouterLink>
         </div>
       </section>
 

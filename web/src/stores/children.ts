@@ -51,6 +51,11 @@ export const useChildrenStore = defineStore('children', () => {
     refresh()
   }
 
+  function removeRecord(id: string, key: string) {
+    legacyChildren.removeRecord(id, key)
+    refresh()
+  }
+
   function recordsOf(id: string): ChildDiagnosticRecord[] {
     return legacyChildren.recordsOf(id)
   }
@@ -109,6 +114,7 @@ export const useChildrenStore = defineStore('children', () => {
     add,
     update,
     remove,
+    removeRecord,
     recordsOf,
     saveRecord,
     exportBackup,

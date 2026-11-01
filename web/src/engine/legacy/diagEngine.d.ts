@@ -41,6 +41,19 @@ export interface EnginePathNode {
   isRoot?: boolean
   isTarget?: boolean
 }
+export interface EngineChapterSummary {
+  key: string
+  volume: string
+  chapterNo: string
+  chapterName: string
+  label: string
+  topics: unknown[]
+  total: number
+  mastered: number
+  shaky: number
+  weak: number
+  untested: number
+}
 
 export interface EngineSummary {
   mode: 'target' | 'screen'
@@ -104,6 +117,7 @@ export interface DiagEngineApi {
     options?: Record<string, unknown>,
   ) => EngineSession
   summarize: (graph: EngineGraph, session: EngineSession) => EngineSummary
+  chapterSummary: (graph: EngineGraph, session: EngineSession) => EngineChapterSummary[]
   statusOf: (session: EngineSession, topicId: string) => string
   subjectOf: (topic: Topic) => SubjectCode
   gradeTargets: (

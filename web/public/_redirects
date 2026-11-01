@@ -1,1 +1,9 @@
 /*    /index.html   200
+/diagnose/index.html    /diagnose/   302
+/diagnose.html          /diagnose/   302
+/explore/index.html     /explore/    302
+/explore.html           /explore/    302
+/children/index.html    /children/   302
+/children.html          /children/   302
+/children/history.html  /children/history/ 302
+/children/history/index.html /children/history/ 302

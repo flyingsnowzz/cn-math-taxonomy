@@ -14,7 +14,14 @@ npm ci
 npm run lint
 npm run typecheck
 npm run test
+npm run test:e2e
 npm run build
+
+if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+  echo "CLOUDFLARE_API_TOKEN is required for production deployment." >&2
+  echo "Run the preview deployment and obtain explicit production authorization first." >&2
+  exit 2
+fi
 
 echo "Deploying Vue frontend production build from $ROOT/dist ..."
 npx --yes wrangler@4.86.0 pages deploy "$ROOT/dist" \

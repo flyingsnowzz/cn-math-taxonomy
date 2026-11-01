@@ -60,14 +60,27 @@ Development batches, second-pass review files and screenshots are not deployed.
 npm run lint
 npm run typecheck
 npm run test
+npm run data:verify
 npm run build
 npm run test:e2e
 npm run preview
+
+Optional Cloudflare preview deployment:
+
+```bash
+./scripts/deploy-preview-cloudflare.sh
+```
+
+Production deployment requires explicit authorization:
+
+```bash
+./scripts/deploy-cloudflare.sh
+```
 ```
 
 `npm run build` executes:
 
-1. subject data package generation;
+1. subject data package generation and integrity verification;
 2. `vue-tsc --noEmit`;
 3. Vite production build;
 4. service worker generation with hashed asset precache entries;
@@ -81,7 +94,7 @@ Implemented:
 
 - Vue 3/Vite/TypeScript project foundation;
 - Vue Router routes, SPA fallback and legacy root hash redirects;
-- Pinia subject, graph-data, question, diagnose, children and UI stores;
+- Pinia subject, graph-data, question, diagnose, children, blindspots and UI stores;
 - typed data loading and runtime JSON validation;
 - Tailwind-based responsive layout;
 - subject-scoped data packages and separate question packages;
@@ -98,12 +111,17 @@ Implemented:
 - weak roots and prerequisite path;
 - undo, restart, print and JSON export;
 - Canvas share poster with QR code;
+- configurable target/screen question limits and confirmation count;
+- screen-result question-limit extension;
+- seen-question avoidance compatible with `cnmDiagnose.seen.v1`;
+- local weak/shaky blindspot ledger with one-click retesting;
 - demo mode (`/diagnose/?target=cnm_221&demo=1`);
 - localStorage session compatibility using the same subject keys;
-- child profiles, local history and JSON backup import/export by reusing the audited legacy profile logic;
+- child profiles, local history and JSON backup import/export by reusing the audited legacy profile logic, verified by an E2E import/history test;
 - PWA manifest, icons and generated service worker;
 - hashed asset precache and visited data runtime caching;
 - Vitest unit tests and Playwright end-to-end tests;
+- GitHub Actions workflow at `../.github/workflows/web.yml`, including Vue and legacy regression jobs;
 - production static build in `dist/`.
 
 Not yet replaced or still requiring product review:
@@ -119,7 +137,7 @@ Not yet replaced or still requiring product review:
 
 ```text
 src/data/          Static data types, guards, subject registry and data client
-src/stores/        Pinia stores
+src/stores/        Pinia stores, including local blindspot aggregation
 src/engine/        TypeScript adapter around the deterministic legacy engine
 src/components/    Vue components and Cytoscape graph wrapper
 src/pages/         Routed pages

@@ -8,13 +8,15 @@
     "data:build": "node scripts/build-data-packages.mjs",
     "predev": "npm run data:build",
     "dev": "vite",
-    "prebuild": "npm run data:build",
+    "prebuild": "npm run data:build && npm run data:verify",
     "build": "vue-tsc --noEmit -p tsconfig.app.json && vite build && node scripts/generate-sw.mjs && node scripts/copy-data.mjs",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
     "lint": "eslint .",
     "test": "vitest run",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "data:verify": "node scripts/verify-data-packages.mjs",
+    "screenshots:review": "node scripts/capture-review-screens.mjs"
   },
   "dependencies": {
     "cytoscape": "^3.34.4",

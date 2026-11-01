@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ErrorState from '@/components/base/ErrorState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import { getSubject, normalizeSubject, subjectFromTopicId } from '@/data/subjectRegistry'
 import { useDiagnoseStore } from '@/stores/diagnose'
 import { useChildrenStore } from '@/stores/children'
+import { useBlindspotsStore } from '@/stores/blindspots'
+import { useDiagnosticSettingsStore } from '@/stores/diagnosticSettings'
 import KnowledgeGraph from '@/components/graph/KnowledgeGraph.vue'
+import QuestionFigure from '@/components/QuestionFigure.vue'
 import { graphForIds } from '@/components/graph/graphAdapter'
 import type { ChildDiagnosticRecord } from '@/children/legacy/children'
 import { downloadShareCard } from '@/share/shareCard'
@@ -17,6 +20,14 @@ const route = useRoute()
 const router = useRouter()
 const diagnose = useDiagnoseStore()
 const childrenStore = useChildrenStore()
+const blindspotsStore = useBlindspotsStore()
+const settingsStore = useDiagnosticSettingsStore()
+const diagnosticSettings = ref(settingsStore.read())
+const queryConfirm = computed(() => {
+  const value = Number(route.query.confirm)
+  return settingsStore.confirmChoices.includes(value as 2 | 3 | 5) ? (value as 2 | 3 | 5) : undefined
+})
+const blindNotedKey = ref('')
 
 const searchText = ref('')
 const numericAnswer = ref('')
@@ -50,6 +61,24 @@ const pathGraph = computed(() => {
 })
 
 const savedToProfile = ref(false)
+const savedSessionVersion = ref(0)
+const savedSession = computed(() => {
+  void savedSessionVersion.value
+  return diagnose.readSavedSession()
+})
+
+function continueSavedSession() {
+  if (savedSession.value && diagnose.restore(savedSession.value)) {
+    answerPhase.value = 'ask'
+    bumpSavedSessionVersion()
+  }
+}
+
+async function discardSavedSession() {
+  diagnose.clearSavedSession()
+  await Promise.resolve()
+  savedSessionVersion.value += 1
+}
 
 const selectableTopics = computed(() => {
   const query = searchText.value.trim().toLowerCase()
@@ -83,11 +112,44 @@ const filteredChapterTree = computed(() => {
     .filter((volume) => volume.chapters.length > 0)
 })
 
+
+function currentDiagnosticOptions() {
+  return {
+    limit: diagnosticSettings.value.limit,
+    confirm: queryConfirm.value ?? diagnosticSettings.value.confirm,
+  }
+}
+
+function updateDiagnosticSetting<K extends keyof typeof diagnosticSettings.value>(
+  key: K,
+  value: (typeof diagnosticSettings.value)[K],
+) {
+  diagnosticSettings.value = settingsStore.save({ [key]: value })
+}
+
+function updateTargetLimit(event: Event) {
+  const value = Number((event.target as HTMLInputElement).value)
+  updateDiagnosticSetting('limit', value)
+}
+
+function updateScreenLimit(event: Event) {
+  const value = Number((event.target as HTMLInputElement).value)
+  updateDiagnosticSetting('screenLimit', value)
+}
+
+function updateConfirm(event: Event) {
+  const value = Number((event.target as HTMLSelectElement).value)
+  if (value === 2 || value === 3 || value === 5) updateDiagnosticSetting('confirm', value)
+}
+
 async function initialize() {
   answerPhase.value = 'ask'
   submittedAnswer.value = ''
   pendingResult.value = null
   savedToProfile.value = false
+  autoStartedKey.value = ''
+  blindNotedKey.value = ''
+  diagnose.resetSessionState()
   const rawTarget = String(route.query.target ?? '')
   const firstRawTarget = rawTarget.split(',')[0]?.trim() ?? ''
   const inferred = subjectFromTopicId(firstRawTarget)
@@ -120,7 +182,8 @@ async function initialize() {
     const seed = typeof route.query.seed === 'string' ? route.query.seed : undefined
     if (route.query.demo === '1') diagnose.startDemo(validTargets)
     else diagnose.start(validTargets, undefined, {
-      limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
+      ...currentDiagnosticOptions(),
+      limit: Number.isFinite(limit) && limit > 0 ? limit : diagnosticSettings.value.limit,
       seed,
     })
     autoStartedKey.value = startKey
@@ -132,8 +195,16 @@ async function initialize() {
     return
   }
 
-  if (scope && diagnose.startGradeScope(scope)) {
-    autoStartedKey.value = startKey
+  if (scope) {
+    const scopeLimit = Number(route.query.limit ?? 0)
+    const scopeSeed = typeof route.query.seed === 'string' ? route.query.seed : undefined
+    if (diagnose.startGradeScope(scope, {
+      limit: Number.isFinite(scopeLimit) && scopeLimit > 0 ? scopeLimit : diagnosticSettings.value.screenLimit,
+      confirm: queryConfirm.value ?? diagnosticSettings.value.confirm,
+      seed: scopeSeed,
+    })) {
+      autoStartedKey.value = startKey
+    }
   }
 }
 
@@ -207,24 +278,36 @@ function saveToProfile() {
   savedToProfile.value = true
 }
 
+function bumpSavedSessionVersion() {
+  savedSessionVersion.value += 1
+}
+
 function startTopic(id: string) {
   numericAnswer.value = ''
   answerPhase.value = 'ask'
   submittedAnswer.value = ''
   pendingResult.value = null
-  if (id) diagnose.start([id])
+  if (id) {
+    diagnose.start([id], undefined, currentDiagnosticOptions())
+    bumpSavedSessionVersion()
+  }
 }
 
 function startChapterFromBrowser(key: string) {
   numericAnswer.value = ''
   answerPhase.value = 'ask'
-  diagnose.startChapter(key)
+  diagnose.startChapter(key, currentDiagnosticOptions())
+  bumpSavedSessionVersion()
 }
 
 function startScope(scope: string) {
   numericAnswer.value = ''
   answerPhase.value = 'ask'
-  diagnose.startGradeScope(scope)
+  diagnose.startGradeScope(scope, {
+    limit: diagnosticSettings.value.screenLimit,
+    confirm: diagnosticSettings.value.confirm,
+  })
+  bumpSavedSessionVersion()
 }
 
 function resetFeedback() {
@@ -278,8 +361,19 @@ function submitNumeric() {
   prepareVerdict(answer)
 }
 
+function prepareManualSelfEvaluation() {
+  if (!currentQuestion.value) return
+  answerPhase.value = 'manual'
+  submittedAnswer.value = numericAnswer.value.trim()
+  pendingResult.value = null
+}
+
 function prepareSkip() {
   if (!currentQuestion.value) return
+  if (currentQuestion.value.type === 'self') {
+    prepareManualSelfEvaluation()
+    return
+  }
   submittedAnswer.value = ''
   pendingResult.value = 'skip'
   answerPhase.value = 'skip'
@@ -308,6 +402,25 @@ const answerKey = computed(() =>
 )
 watch(answerKey, () => resetFeedback())
 
+watch(
+  () => diagnose.summary,
+  (summary) => {
+    if (!summary || !diagnose.session || route.query.demo === '1') return
+    const key = `${subject.value}:${diagnose.session.seed}:${summary.targets.join(',')}:${summary.asked}`
+    if (blindNotedKey.value === key) return
+    blindspotsStore.noteResult({
+      subject: subject.value,
+      label: diagnose.label,
+      key,
+      demo: false,
+      answers: diagnose.session.answers,
+      summary,
+    })
+    blindNotedKey.value = key
+  },
+  { immediate: true },
+)
+
 watch(subject, () => {
   void initialize()
 })
@@ -323,12 +436,12 @@ onMounted(() => {
         <h1 class="text-2xl font-bold tracking-tight">{{ getSubject(subject).label }}自适应诊断</h1>
         <p class="mt-1 text-sm text-slate-500">从目标知识点开始，沿 hard / soft 先修关系定位薄弱根因。</p>
       </div>
-      <div class="flex flex-wrap rounded-xl bg-white p-1 ring-1 ring-slate-200">
+      <div class="grid flex-wrap grid-cols-4 gap-1 rounded-xl bg-white p-1 ring-1 ring-slate-200 sm:flex">
         <button
           v-for="code in ['math','english','physics','chinese','science','morality','history','geography'] as SubjectCode[]"
           :key="code"
           type="button"
-          class="rounded-lg px-3 py-1.5 text-xs font-medium"
+          class="rounded-lg px-2 py-1.5 text-xs font-medium sm:px-3"
           :class="code === subject ? 'bg-teal-700 text-white' : 'text-slate-600 hover:bg-slate-100'"
           @click="switchSubject(code)"
         >
@@ -417,6 +530,60 @@ onMounted(() => {
         </div>
 
         <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+          <h2 class="mb-3 text-base font-semibold">诊断设置</h2>
+          <div class="grid gap-3 sm:grid-cols-3">
+            <label class="text-xs font-medium text-slate-600">
+              单点/整章题量上限
+              <input
+                type="number"
+                min="8"
+                max="30"
+                class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                :value="diagnosticSettings.limit"
+                @change="updateTargetLimit"
+              />
+            </label>
+            <label class="text-xs font-medium text-slate-600">
+              整体筛查题量上限
+              <input
+                type="number"
+                min="20"
+                max="60"
+                class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                :value="diagnosticSettings.screenLimit"
+                @change="updateScreenLimit"
+              />
+            </label>
+            <label class="text-xs font-medium text-slate-600">
+              每知识点确认题数
+              <select
+                class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                :value="diagnosticSettings.confirm"
+                @change="updateConfirm"
+              >
+                <option v-for="count in settingsStore.confirmChoices" :key="count" :value="count">{{ count }} 题</option>
+              </select>
+            </label>
+          </div>
+          <p class="mt-2 text-xs leading-5 text-slate-500">设置保存在本机 localStorage；连续答对指定题数才判掌握，题库不足时以题库数量为准。</p>
+        </div>
+
+        <div v-if="savedSession" class="rounded-2xl border border-teal-200 bg-teal-50 p-4 shadow-sm">
+          <h2 class="text-base font-semibold text-teal-950">继续上次诊断</h2>
+          <p class="mt-1 text-sm text-teal-800">
+            {{ savedSession.label }} · 已答 {{ savedSession.answers.length }} 题
+          </p>
+          <div class="mt-3 flex gap-2">
+            <button class="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-800" @click="continueSavedSession">
+              继续
+            </button>
+            <button class="rounded-lg border border-teal-200 bg-white px-3 py-1.5 text-xs font-semibold text-teal-800 hover:bg-teal-50" @click="discardSavedSession">
+              放弃存档
+            </button>
+          </div>
+        </div>
+
+        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
           <h2 class="mb-3 text-base font-semibold">快速整体诊断</h2>
           <p class="text-sm leading-6 text-slate-500">也可以选择年级或册次进入筛查模式。筛查范围限制在本册内容内，范围外先修将在结果中提示。</p>
           <div class="mt-4 grid grid-cols-2 gap-2">
@@ -457,22 +624,45 @@ onMounted(() => {
             <h2 class="text-xl font-semibold leading-8">{{ currentQuestion.prompt }}</h2>
           </div>
 
+          <QuestionFigure v-if="currentQuestion.figure" :svg="currentQuestion.figure" />
+
           <div v-if="answerPhase === 'ask' && currentQuestion.type === 'choice' && currentQuestion.choices" class="mt-6 grid gap-3">
             <button
               v-for="choice in currentQuestion.choices"
               :key="choice.key"
-              class="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-left text-sm transition hover:border-teal-300 hover:bg-teal-50"
+              :class="[`flex ${choice.figure && !currentQuestion.hideChoiceText ? 'flex-wrap' : 'items-center'} gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-left text-sm transition hover:border-teal-300 hover:bg-teal-50`]"
               @click="choose(choice.key)"
             >
               <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 font-semibold">{{ choice.key }}</span>
-              <span>{{ choice.text }}</span>
+              <span v-if="!currentQuestion.hideChoiceText || !choice.figure">{{ choice.text }}</span>
+              <QuestionFigure
+                v-if="choice.figure"
+                :svg="choice.figure"
+                :class="currentQuestion.hideChoiceText ? 'max-w-[96px] flex-1' : 'w-full basis-full'"
+              />
             </button>
           </div>
 
+          <div v-else-if="answerPhase === 'ask' && currentQuestion.type === 'self'" class="mt-6">
+            <label class="mb-2 block text-sm font-medium text-slate-700">开放作答</label>
+            <textarea
+              v-model="numericAnswer"
+              rows="4"
+              class="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              placeholder="开放题：可以写下自己的思路（不会自动判分），再点「看参考答案并自评」"
+            />
+            <div class="mt-3">
+              <button class="rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-800" @click="prepareManualSelfEvaluation">
+                看参考答案并自评
+              </button>
+            </div>
+          </div>
+
           <div v-else-if="answerPhase === 'ask'" class="mt-6">
-            <label class="mb-2 block text-sm font-medium text-slate-700">输入答案</label>
+            <label for="diagnosis-answer-input" class="mb-2 block text-sm font-medium text-slate-700">输入答案</label>
             <div class="flex gap-2">
               <input
+                id="diagnosis-answer-input"
                 v-model="numericAnswer"
                 class="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                 @keyup.enter="submitNumeric"
@@ -551,13 +741,24 @@ onMounted(() => {
         <div class="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200">
           <p class="text-sm font-medium text-teal-700">诊断结果：{{ diagnose.label }}</p>
           <h2 class="mt-2 text-2xl font-bold">共作答 {{ diagnose.summary.asked }} 题</h2>
-          <div class="mt-6 grid gap-3 sm:grid-cols-4">
+          <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div class="rounded-2xl bg-emerald-50 p-4"><b class="block text-2xl">{{ diagnose.summary.mastered.length }}</b>已掌握</div>
             <div class="rounded-2xl bg-amber-50 p-4"><b class="block text-2xl">{{ diagnose.summary.shaky.length }}</b>不稳</div>
             <div class="rounded-2xl bg-red-50 p-4"><b class="block text-2xl">{{ diagnose.summary.weak.length }}</b>薄弱</div>
             <div class="rounded-2xl bg-slate-100 p-4"><b class="block text-2xl">{{ diagnose.summary.untested.length }}</b>未测</div>
           </div>
-          <div class="mt-6 flex gap-3">
+
+          <p v-if="diagnose.summary.limitReached" class="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
+            已达到题量上限（{{ diagnose.summary.limit }}），未测到的知识点标为“未测”。薄弱根因的先修中若有未测点，真正根因可能更靠前。
+            <button
+              v-if="diagnose.summary.limit < 60"
+              class="ml-3 rounded-lg bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-800"
+              @click="diagnose.extendSession()"
+            >
+              再多答 {{ Math.min(10, 60 - diagnose.summary.limit) }} 题
+            </button>
+          </p>
+          <div class="mt-6 flex flex-wrap gap-3">
             <button class="rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white" @click="diagnose.restart()">重新诊断</button>
             <button class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold" @click="printResult">打印结果</button>
             <button class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold" @click="downloadResultPoster">生成分享图</button>
@@ -565,12 +766,19 @@ onMounted(() => {
             <button class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold" :disabled="diagnose.session?.answers.length === 0" @click="diagnose.undo()">
               撤销上一题
             </button>
-            <button
+            <RouterLink
+              to="/children/"
               class="rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800"
-              :disabled="!childrenStore.current || savedToProfile"
+            >
+              选择孩子档案
+            </RouterLink>
+            <button
+              v-if="childrenStore.current"
+              class="min-w-0 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800"
+              :disabled="savedToProfile"
               @click="saveToProfile"
             >
-              {{ savedToProfile ? '已保存到当前档案' : childrenStore.current ? '保存到当前孩子档案' : '请先选择孩子档案' }}
+              {{ savedToProfile ? '已保存到当前档案' : '保存到当前孩子档案' }}
             </button>
           </div>
         </div>
@@ -603,13 +811,46 @@ onMounted(() => {
             </ol>
           </div>
         </div>
+
+        <section v-if="diagnose.chapterSummaries.length" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <h3 class="font-semibold">章节筛查汇总</h3>
+            <span class="text-xs text-slate-500">薄弱章节排在前面</span>
+          </div>
+          <div class="grid gap-2 md:grid-cols-2">
+            <div
+              v-for="chapter in diagnose.chapterSummaries"
+              :key="chapter.key"
+              class="rounded-xl border border-slate-200 p-3"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm font-semibold">{{ chapter.volume }} · {{ chapter.label }}</p>
+                  <p class="mt-0.5 text-xs text-slate-500">{{ chapter.total }} 个知识点</p>
+                </div>
+                <div class="shrink-0 text-right text-xs">
+                  <span class="mr-1 text-emerald-700">{{ chapter.mastered }} 掌握</span>
+                  <span class="mr-1 text-amber-700">{{ chapter.shaky }} 不稳</span>
+                  <span class="text-red-700">{{ chapter.weak }} 薄弱</span>
+                </div>
+              </div>
+              <div class="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100">
+                <span class="bg-emerald-500" :style="{ width: `${chapter.total ? (chapter.mastered / chapter.total) * 100 : 0}%` }" />
+                <span class="bg-amber-400" :style="{ width: `${chapter.total ? (chapter.shaky / chapter.total) * 100 : 0}%` }" />
+                <span class="bg-red-500" :style="{ width: `${chapter.total ? (chapter.weak / chapter.total) * 100 : 0}%` }" />
+                <span class="bg-slate-300" :style="{ width: `${chapter.total ? (chapter.untested / chapter.total) * 100 : 0}%` }" />
+              </div>
+            </div>
+          </div>
+        </section>
+
         <KnowledgeGraph
           v-if="pathGraph.topics.length"
           :topics="pathGraph.topics"
           :edges="pathGraph.edges"
           :selected-id="diagnose.summary.targets[0] ?? pathGraph.topics[0]?.id ?? ''"
           :subject="subject"
-          class="mt-4 min-h-[420px]"
+          class="mt-4 min-h-[360px] sm:min-h-[420px]"
         />
       </section>
     </template>

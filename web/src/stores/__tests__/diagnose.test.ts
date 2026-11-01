@@ -72,4 +72,20 @@ describe('diagnose store', () => {
     expect(diagnose.summary?.weak).toContain('cnm_j1')
     expect(localStorage.getItem('cnmDiagnose.session.v2')).toBeNull()
   })
+
+  it('marks answered questions as seen and uses them to avoid repeats in future sessions', async () => {
+    await useGraphDataStore().load('math')
+    const diagnose = useDiagnoseStore()
+    await diagnose.load('math')
+    diagnose.start(['cnm_j1'], '目标', { seed: 'fixed-seen', limit: 1 })
+    const questionId = diagnose.currentItem?.question.id
+    expect(questionId).toBeTruthy()
+
+    diagnose.submit('skip')
+    expect(JSON.parse(localStorage.getItem('cnmDiagnose.seen.v1') ?? '[]')).toContain(questionId)
+
+    diagnose.start(['cnm_j1'], '目标', { seed: 'fixed-seen' })
+    expect(diagnose.session?.avoid).toContain(questionId)
+  })
+
 })

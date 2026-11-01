@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { loadSubjectQuestions } from '@/data/dataClient'
+import { createLocalId } from '@/utils/id'
 import { useGraphDataStore } from './graphData'
 import { buildChapterTree, type ChapterTree } from '@/data/chapterTree'
 import { readJson, remove, writeJson } from '@/utils/storage'
@@ -14,6 +15,7 @@ import type {
 import {
   applyAnswer,
   buildGraph,
+  chapterSummary,
   createSession,
   gradeTargets,
   judgeAnswer,
@@ -22,6 +24,7 @@ import {
   resolveTargets,
   summarize,
   type AnswerResult,
+  type EngineChapterSummary,
   type EngineGraph,
   type EngineNextItem,
   type EngineSession,
@@ -40,6 +43,8 @@ export interface DiagnosticSavedSession {
   avoid: string[]
   savedAt: string
 }
+
+const SEEN_STORAGE_KEY = 'cnmDiagnose.seen.v1'
 
 export interface DiagnosticOptions {
   mode?: 'target' | 'screen'
@@ -82,6 +87,7 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
   const chapterTree = ref<ChapterTree>({ volumes: [], chaptersByKey: new Map() })
   const subject = ref<SubjectCode>('math')
   const loadError = ref('')
+  const seenQuestionIds = ref<string[]>([])
 
   const currentItem = computed<EngineNextItem | null>(() => {
     if (!graph.value || !session.value) return null
@@ -92,6 +98,8 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
     return summarize(graph.value, session.value)
   })
   const topicById = computed<Map<string, Topic>>(() => new Map(graph.value?.topics.map((topic) => [topic.id, topic])))
+  const chapterSummaries = ref<EngineChapterSummary[]>([])
+
   const questionById = computed<Map<string, Question>>(() => {
     const map = new Map<string, Question>()
     for (const question of graph.value?.bank ? Object.values(graph.value.bank).flat() : []) {
@@ -114,6 +122,27 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
     return keys[subject.value]
   }
 
+
+  function readSeenQuestionIds(): string[] {
+    const value = readJson(SEEN_STORAGE_KEY, (raw: unknown): raw is string[] =>
+      Array.isArray(raw) && raw.every((item) => typeof item === 'string'),
+    )
+    seenQuestionIds.value = value ?? []
+    return seenQuestionIds.value
+  }
+
+  function writeSeenQuestionIds() {
+    writeJson(SEEN_STORAGE_KEY, seenQuestionIds.value)
+  }
+
+  function markQuestionSeen(questionId: string | null | undefined) {
+    if (!questionId || session.value?.seed === 'demo') return
+    if (!seenQuestionIds.value.includes(questionId)) {
+      seenQuestionIds.value = [...seenQuestionIds.value, questionId]
+      writeSeenQuestionIds()
+    }
+  }
+
   function persist() {
     if (!session.value) return
     const saved: DiagnosticSavedSession = {
@@ -134,6 +163,7 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
 
   async function load(nextSubject: SubjectCode) {
     subject.value = nextSubject
+    readSeenQuestionIds()
     loadError.value = ''
     try {
       await graphData.load(nextSubject)
@@ -158,6 +188,20 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
     return aliases.value ? resolveTargets(rawTargets, aliases.value) : rawTargets
   }
 
+
+
+  function resetSessionState() {
+    session.value = null
+    label.value = ''
+    savedAt.value = ''
+    chapterSummaries.value = []
+  }
+
+  function clearSession() {
+    resetSessionState()
+    clearSavedSession()
+  }
+
   function start(rawTargets: string[], nextLabel?: string, options: DiagnosticOptions = {}) {
     if (!graph.value) return
     const targets = resolveTargetIds(rawTargets).filter((id) => Boolean(graph.value?.byId[id]))
@@ -166,10 +210,11 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
       mode: options.mode ?? 'target',
       limit: options.limit,
       confirm: options.confirm,
-      seed: options.seed ?? `web-${Math.random().toString(36).slice(2, 10)}`,
-      avoid: options.avoid ?? [],
+      seed: options.seed ?? createLocalId('web-'),
+      avoid: options.avoid ?? seenQuestionIds.value,
     }
     session.value = createSession(graph.value, targets, sessionOptions)
+    chapterSummaries.value = sessionOptions.mode === 'screen' ? chapterSummary(graph.value, session.value) : []
     label.value = nextLabel || targets.map((id) => graph.value?.byId[id]?.name ?? id).join('、')
     savedAt.value = ''
     persist()
@@ -226,21 +271,28 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
     remove(storageKey())
   }
 
-  function startChapter(chapterKey: string): string | null {
+  function startChapter(chapterKey: string, options: DiagnosticOptions = {}): string | null {
     const chapter = chapterTree.value.chaptersByKey.get(chapterKey)
     if (!chapter) return null
     start(
       chapter.topics.map((item) => item.topic.id),
       `${chapter.fullLabel}（整章）`,
+      options,
     )
     return chapter.fullLabel
   }
 
-  function startGradeScope(scope: string): string | null {
+  function startGradeScope(scope: string, options: DiagnosticOptions = {}): string | null {
     if (!graph.value) return null
     const result = gradeTargets(graph.value, scope, subject.value)
     if (!result) return null
-    start(result.ids, `${result.label}整体诊断`, { mode: 'screen' })
+    start(result.ids, `${result.label}整体诊断`, {
+      mode: 'screen',
+      limit: options.limit,
+      confirm: options.confirm,
+      seed: options.seed,
+      avoid: options.avoid,
+    })
     return result.label
   }
 
@@ -290,6 +342,7 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
 
   function submit(result: AnswerResult, userText?: string) {
     if (!graph.value || !session.value || !currentItem.value) return
+    const questionId = currentItem.value.question.id
     session.value = applyAnswer(
       graph.value,
       session.value,
@@ -297,6 +350,7 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
       result,
       userText,
     )
+    markQuestionSeen(questionId)
     persist()
   }
 
@@ -308,10 +362,34 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
     return { result: verdict.verdict, reason: verdict.reason, manual: false }
   }
 
+
+  const MAX_SCREEN_LIMIT = 60
+
+  function extendSession(additionalQuestions = 10) {
+    if (!graph.value || !session.value || !summary.value?.limitReached) return
+    const nextLimit = Math.min(session.value.limit + additionalQuestions, MAX_SCREEN_LIMIT)
+    if (nextLimit === session.value.limit) return
+    const replayed = buildReplay({
+      v: 2,
+      mode: session.value.mode,
+      targets: session.value.targets,
+      limit: nextLimit,
+      confirm: session.value.confirm,
+      label: label.value,
+      answers: session.value.answers,
+      seed: session.value.seed,
+      avoid: session.value.avoid,
+      savedAt: savedAt.value,
+    })
+    session.value = replayed
+    chapterSummaries.value = replayed.mode === 'screen' ? chapterSummary(graph.value, replayed) : []
+    persist()
+  }
+
   function undo() {
     if (!graph.value || !session.value) return
     const answers = session.value.answers.slice(0, -1)
-    session.value = buildReplay({
+    const replayed = buildReplay({
       v: 2,
       mode: session.value.mode,
       targets: session.value.targets,
@@ -323,6 +401,8 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
       avoid: session.value.avoid,
       savedAt: savedAt.value,
     })
+    session.value = replayed
+    chapterSummaries.value = replayed.mode === 'screen' ? chapterSummary(graph.value, replayed) : []
     persist()
   }
 
@@ -334,6 +414,7 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
     graph,
     edges,
     chapterTree,
+    chapterSummaries,
     session,
     label,
     savedAt,
@@ -343,6 +424,8 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
     summary,
     topicById,
     questionById,
+    seenQuestionIds,
+    markQuestionSeen,
     load,
     start,
     startDemo,
@@ -353,9 +436,12 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
     readSavedSession,
     clearSavedSession,
     restart,
+    clearSession,
+    resetSessionState,
     submit,
     judge,
     undo,
+    extendSession,
     nameOf,
   }
 })

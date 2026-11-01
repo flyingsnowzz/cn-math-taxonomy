@@ -20,10 +20,17 @@ const searchText = ref(String(route.query.q ?? ''))
 const gradeFilter = ref(String(route.query.grade ?? ''))
 const domainFilter = ref(String(route.query.domain ?? ''))
 const upDepth = ref(2)
+const downDepth = ref(1)
 const listExpanded = ref(false)
+const initialDepth = Number(route.query.depth ?? 2)
+upDepth.value = Number.isFinite(initialDepth) && initialDepth > 0 ? Math.min(99, Math.floor(initialDepth)) : 2
 
 const subject = computed<SubjectCode>(() => normalizeSubject(route.query.subject))
 const selectedId = computed(() => decodeURIComponent(String(route.hash ?? '').replace(/^#/, '')))
+const requestedDepth = computed(() => {
+  const depth = Number(route.query.depth ?? 2)
+  return Number.isFinite(depth) && depth > 0 ? Math.min(99, Math.floor(depth)) : 2
+})
 const topics = computed(() => graphStore.topicsFor(subject.value))
 const edges = computed(() => graphStore.edgesFor(subject.value))
 const standardsById = computed<Map<string, CurriculumStandardItem>>(() => {
@@ -65,7 +72,7 @@ const neighborhood = computed(() =>
   selectedTopic.value
     ? selectNeighborhood(topics.value, edges.value, selectedTopic.value.id, {
         upDepth: upDepth.value,
-        downDepth: 1,
+        downDepth: downDepth.value,
       })
     : { topics: [], edges: [] },
 )
@@ -79,14 +86,46 @@ async function load() {
 }
 
 async function selectTopic(id: string) {
-  await router.replace({
-    path: '/explore/',
-    query: { ...route.query, subject: subject.value },
-    hash: `#${encodeURIComponent(id)}`,
-  })
+  const query: Record<string, string> = { subject: subject.value }
+  if (searchText.value.trim()) query.q = searchText.value.trim()
+  if (gradeFilter.value) query.grade = gradeFilter.value
+  if (domainFilter.value) query.domain = domainFilter.value
+  if (upDepth.value !== 2) query.depth = String(upDepth.value)
+  await router.replace({ path: '/explore/', query, hash: `#${encodeURIComponent(id)}` })
+}
+
+async function syncQuery() {
+  const query: Record<string, string> = { subject: subject.value }
+  if (searchText.value.trim()) query.q = searchText.value.trim()
+  if (gradeFilter.value) query.grade = gradeFilter.value
+  if (domainFilter.value) query.domain = domainFilter.value
+  if (upDepth.value !== 2) query.depth = String(upDepth.value)
+  if (selectedId.value) {
+    await router.replace({ path: '/explore/', query, hash: `#${encodeURIComponent(selectedId.value)}` })
+  } else {
+    await router.replace({ path: '/explore/', query })
+  }
 }
 
 watch(subject, (value) => subjectStore.setSubject(value), { immediate: true })
+watch(subject, (value, previousValue) => {
+  if (previousValue && value !== previousValue) void load()
+})
+watch(() => route.query.q, (value) => {
+  searchText.value = String(value ?? '')
+})
+watch(() => route.query.grade, (value) => {
+  gradeFilter.value = value == null ? '' : String(value)
+})
+watch(() => route.query.domain, (value) => {
+  domainFilter.value = value == null ? '' : String(value)
+})
+watch(() => route.query.depth, () => {
+  upDepth.value = requestedDepth.value
+})
+watch([searchText, gradeFilter, domainFilter, upDepth], () => {
+  void syncQuery()
+})
 watch(
   () => [graphStore.state, selectedId.value, topics.value.length] as const,
   ([state, id, count]) => {
@@ -146,17 +185,30 @@ onMounted(load)
           </div>
 
           <div class="flex items-center justify-between text-xs text-slate-500">
-            <span>{{ filteredTopics.length }} 个知识点</span>
-            <div class="flex gap-1">
-              <button
-                v-for="depth in [1, 2, 3, 99]"
-                :key="depth"
-                class="rounded-full px-2.5 py-1"
-                :class="upDepth === depth ? 'bg-teal-700 text-white' : 'bg-slate-100 hover:bg-slate-200'"
-                @click="upDepth = depth"
-              >
-                {{ depth === 99 ? '全部祖先' : `向上 ${depth} 层` }}
-              </button>
+            <span data-testid="explore-topic-count">{{ filteredTopics.length }} 个知识点</span>
+            <div class="space-y-1">
+              <div class="flex flex-wrap gap-1">
+                <button
+                  v-for="depth in [1, 2, 3, 99]"
+                  :key="`up-${depth}`"
+                  class="rounded-full px-2.5 py-1"
+                  :class="upDepth === depth ? 'bg-teal-700 text-white' : 'bg-slate-100 hover:bg-slate-200'"
+                  @click="upDepth = depth"
+                >
+                  {{ depth === 99 ? '全部祖先' : `向上 ${depth}` }}
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-1">
+                <button
+                  v-for="depth in [0, 1, 2]"
+                  :key="`down-${depth}`"
+                  class="rounded-full px-2.5 py-1"
+                  :class="downDepth === depth ? 'bg-teal-700 text-white' : 'bg-slate-100 hover:bg-slate-200'"
+                  @click="downDepth = depth"
+                >
+                  {{ depth === 0 ? '不看后续' : `向下 ${depth}` }}
+                </button>
+              </div>
             </div>
           </div>
 

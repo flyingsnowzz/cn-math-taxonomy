@@ -1,10 +1,38 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useChildrenStore } from '@/stores/children'
 
+const route = useRoute()
+const router = useRouter()
 const childrenStore = useChildrenStore()
-const selectedChildId = ref(childrenStore.currentId ?? childrenStore.children[0]?.id ?? '')
-const subject = ref('')
+const selectedChildId = ref(String(route.query.child ?? childrenStore.currentId ?? childrenStore.children[0]?.id ?? ''))
+const subject = ref(String(route.query.subject ?? ''))
+const historyVersion = ref(0)
+
+watch([selectedChildId, subject], ([child, nextSubject]) => {
+  void router.replace({
+    query: {
+      ...(child ? { child: String(child) } : {}),
+      ...(nextSubject ? { subject: String(nextSubject) } : {}),
+    },
+  })
+})
+
+watch(
+  () => route.query.child,
+  (child) => {
+    const nextChild = String(child ?? '')
+    if (nextChild && nextChild !== selectedChildId.value) selectedChildId.value = nextChild
+  },
+)
+
+watch(
+  () => route.query.subject,
+  (nextSubject) => {
+    subject.value = String(nextSubject ?? '')
+  },
+)
 
 const subjects = [
   { code: '', label: '全部学科' },
@@ -19,6 +47,7 @@ const subjects = [
 ]
 
 const records = computed(() => {
+  void historyVersion.value
   if (!selectedChildId.value) return []
   return childrenStore
     .recordsOf(selectedChildId.value)
@@ -26,6 +55,12 @@ const records = computed(() => {
 })
 
 const subjectLabel = new Map(subjects.map((item) => [item.code, item.label]))
+
+function removeRecord(key: string) {
+  if (!selectedChildId.value) return
+  childrenStore.removeRecord(selectedChildId.value, key)
+  historyVersion.value += 1
+}
 </script>
 
 <template>
@@ -74,6 +109,20 @@ const subjectLabel = new Map(subjects.map((item) => [item.code, item.label]))
             <p v-if="record.roots.length" class="mt-3 text-sm text-slate-600">
               根因：{{ record.roots.join('、') }}
             </p>
+            <div class="mt-4 flex flex-wrap gap-2">
+              <RouterLink
+                class="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-800"
+                :to="{ path: '/diagnose/', query: { subject: record.subject, target: record.targets?.join(',') ?? '' } }"
+              >
+                再测一次
+              </RouterLink>
+              <button
+                class="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+                @click="removeRecord(record.key)"
+              >
+                删除记录
+              </button>
+            </div>
           </article>
           <div v-if="records.length === 0" class="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
             当前筛选条件下暂无历史记录。
