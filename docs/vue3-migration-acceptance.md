@@ -30,8 +30,8 @@ npm run test:e2e
 
 - ESLint：通过；
 - `vue-tsc --noEmit`：通过；
-- Vitest：6 个测试文件、15 个测试通过；
-- Playwright：76 个 E2E 测试通过；
+- Vitest：6 个测试文件、16 个测试通过；
+- Playwright：88 个 E2E 测试通过；
 - 8 个学科数据包构建与校验通过；
 - 生产构建：通过；
 - 未执行任何远程部署。
@@ -114,6 +114,9 @@ node tests/test_blindspots.js
 - 修复深层路由直接打开时 Service Worker 误注册为 `/explore/sw.js`、`/diagnose/sw.js` 的问题；生产环境始终注册根作用域 `/sw.js`，并清理错误深层注册；
 - 图谱节点增加悬停/点击名称提示；生产页面补齐 favicon，深层路由控制台无脚本 MIME/404 错误；
 - 孩子历史的本机盲区支持按章节分组和“再测本章薄弱”；无档案时也展示本机盲区；
+- 图谱“全部祖先”支持旧版按年级折叠、展开全部和收起；向上层级偏好兼容旧 `sessionStorage.cnmExplore.depth`；
+- 8 学科整册筛查均验证 1 题后生成章节汇总；英语三年级、数学七年级整年级参数验证上下册合并；
+- Service Worker 用例拆分串行，覆盖离线刷新、根作用域注册和深层路由误注册清理；
 - Vite 开发环境自动清理旧静态站遗留的 `cnm-pwa-*` / `cnm-vue-*` Service Worker 与缓存，避免本机旧缓存影响新学科数据；生产环境仍由构建生成的 Service Worker 管理。
 
 ## 仍需人工确认

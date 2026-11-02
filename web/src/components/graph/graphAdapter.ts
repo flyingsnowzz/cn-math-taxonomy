@@ -404,3 +404,71 @@ export function foldDiagnosticLayout(
     })),
   }
 }
+
+
+export function foldNeighborhoodByGrade(
+  neighborhood: { topics: Topic[]; edges: GraphEdge[] },
+  selectedId: string,
+  dependentIds: ReadonlySet<string>,
+  formatGradeLabel: (grade: number) => string,
+): { topics: Topic[]; edges: GraphEdge[] } {
+  if (neighborhood.topics.length <= 40) return neighborhood
+
+  const bucket = new Map<string, string>()
+  const membersByGrade = new Map<number, string[]>()
+  const foldedTopics: Topic[] = []
+
+  for (const topic of neighborhood.topics) {
+    const isAnchor = topic.id === selectedId || dependentIds.has(topic.id)
+    if (isAnchor) {
+      bucket.set(topic.id, topic.id)
+      foldedTopics.push(topic)
+      continue
+    }
+    const list = membersByGrade.get(topic.grade) ?? []
+    list.push(topic.id)
+    membersByGrade.set(topic.grade, list)
+  }
+
+  membersByGrade.forEach((memberIds, grade) => {
+    const groupId = `grade-${grade}`
+    memberIds.forEach((id) => bucket.set(id, groupId))
+    foldedTopics.push({
+      id: groupId,
+      name: `${formatGradeLabel(grade)} · ${memberIds.length}个`,
+      domain: '',
+      grade,
+      chapter: '',
+      type: 'grade-fold',
+    })
+  })
+
+  const rankedEdges = new Map<string, GraphEdge & { rank: number }>()
+  for (const edge of neighborhood.edges) {
+    const source = bucket.get(edge.prerequisiteId)
+    const target = bucket.get(edge.topicId)
+    if (!source || !target || source === target) continue
+    const indirect = source.startsWith('grade-') || target.startsWith('grade-')
+    const rank = !indirect && !edge.indirect && edge.strength === 'hard' ? 3 : edge.strength === 'soft' ? 2 : 1
+    const key = `${source}>${target}`
+    const previous = rankedEdges.get(key)
+    if (previous && previous.rank >= rank) continue
+    rankedEdges.set(key, {
+      topicId: target,
+      prerequisiteId: source,
+      strength: rank === 3 ? 'hard' : 'soft',
+      indirect: rank === 1,
+      rank,
+    })
+  }
+
+  return {
+    topics: foldedTopics,
+    edges: [...rankedEdges.values()].map((edge) => ({
+      topicId: edge.topicId,
+      prerequisiteId: edge.prerequisiteId,
+      strength: edge.strength,
+      indirect: edge.indirect,
+    })),
+  }
+}

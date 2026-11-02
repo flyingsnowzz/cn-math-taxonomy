@@ -4,7 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ErrorState from '@/components/base/ErrorState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import KnowledgeGraph from '@/components/graph/KnowledgeGraph.vue'
-import { selectNeighborhood } from '@/components/graph/graphAdapter'
+import { foldNeighborhoodByGrade, selectNeighborhood } from '@/components/graph/graphAdapter'
 import { formatGradeForSubject, getSubject, normalizeSubject, topicStage } from '@/data/subjectRegistry'
 import { standardItems } from '@/data/guards'
 import { useGraphDataStore } from '@/stores/graphData'
@@ -37,11 +37,28 @@ const searchText = ref(String(route.query.q ?? ''))
 const stageFilter = ref<StageFilter>(stageFromQuery(route.query.stage))
 const gradeFilter = ref(String(route.query.grade ?? ''))
 const domainFilter = ref(String(route.query.domain ?? ''))
-const upDepth = ref(2)
+const EXPLORE_DEPTH_KEY = 'cnmExplore.depth'
+
+function normalizeDepth(value: unknown): number {
+  const depth = Number(value)
+  return Number.isFinite(depth) && depth > 0 ? Math.min(99, Math.floor(depth)) : 2
+}
+
+function readInitialDepth(): number {
+  if (route.query.depth !== undefined) return normalizeDepth(route.query.depth)
+  try {
+    const saved = window.sessionStorage.getItem(EXPLORE_DEPTH_KEY)
+    if (saved === '1' || saved === '2' || saved === '3') return normalizeDepth(saved)
+  } catch {
+    // Session Storage can be unavailable in restricted contexts.
+  }
+  return 2
+}
+
+const upDepth = ref(readInitialDepth())
 const downDepth = ref(1)
+const ancestorsExpanded = ref(false)
 const listExpanded = ref(false)
-const initialDepth = Number(route.query.depth ?? 2)
-upDepth.value = Number.isFinite(initialDepth) && initialDepth > 0 ? Math.min(99, Math.floor(initialDepth)) : 2
 
 const subject = computed<SubjectCode>(() => normalizeSubject(route.query.subject))
 const selectedId = computed(() => decodeURIComponent(String(route.hash ?? '').replace(/^#/, '')))
@@ -101,14 +118,33 @@ const selectedStandards = computed(() =>
     : [],
 )
 
-const neighborhood = computed(() =>
-  selectedTopic.value
-    ? selectNeighborhood(topics.value, edges.value, selectedTopic.value.id, {
-        upDepth: upDepth.value,
-        downDepth: downDepth.value,
-      })
-    : { topics: [], edges: [] },
-)
+const neighborhood = computed(() => {
+  if (!selectedTopic.value) return { topics: [], edges: [] }
+  const full = selectNeighborhood(topics.value, edges.value, selectedTopic.value.id, {
+    upDepth: upDepth.value,
+    downDepth: downDepth.value,
+  })
+  if (upDepth.value !== 99 || ancestorsExpanded.value || full.topics.length <= 40) return full
+  const dependentIds = new Set(
+    edges.value
+      .filter((edge) => edge.prerequisiteId === selectedTopic.value?.id)
+      .map((edge) => edge.topicId),
+  )
+  return foldNeighborhoodByGrade(
+    full,
+    selectedTopic.value.id,
+    dependentIds,
+    (grade) => formatGradeForSubject(subject.value, grade),
+  )
+})
+const graphFoldInfo = computed(() => {
+  if (upDepth.value !== 99 || !selectedTopic.value) return null
+  const full = selectNeighborhood(topics.value, edges.value, selectedTopic.value.id, {
+    upDepth: 99,
+    downDepth: downDepth.value,
+  })
+  return full.topics.length > 40 ? { count: full.topics.length, folded: !ancestorsExpanded.value } : null
+})
 
 async function load() {
   try {
@@ -153,6 +189,7 @@ function syncFiltersFromRoute() {
 watch(subject, (value) => subjectStore.setSubject(value), { immediate: true })
 watch(subject, (value, previousValue) => {
   if (previousValue && value !== previousValue) {
+    ancestorsExpanded.value = false
     syncFiltersFromRoute()
     void load()
   }
@@ -169,10 +206,18 @@ watch(() => route.query.grade, (value) => {
 watch(() => route.query.domain, (value) => {
   domainFilter.value = value == null ? '' : String(value)
 })
-watch(() => route.query.depth, () => {
-  upDepth.value = requestedDepth.value
+watch(() => route.query.depth, (value) => {
+  if (value !== undefined) {
+    upDepth.value = requestedDepth.value
+    ancestorsExpanded.value = false
+  }
 })
 watch([searchText, gradeFilter, domainFilter, upDepth], () => {
+  try {
+    window.sessionStorage.setItem(EXPLORE_DEPTH_KEY, String(upDepth.value))
+  } catch {
+    // Depth preference is progressive enhancement.
+  }
   void syncQuery()
 })
 watch(
@@ -187,7 +232,12 @@ watch(
   { immediate: true },
 )
 
-onMounted(load)
+onMounted(async () => {
+  await load()
+  if (route.query.depth === undefined && upDepth.value !== 2) {
+    await syncQuery()
+  }
+})
 </script>
 
 <template>
@@ -259,7 +309,7 @@ onMounted(load)
                   :key="`up-${depth}`"
                   class="rounded-full px-2.5 py-1"
                   :class="upDepth === depth ? 'bg-teal-700 text-white' : 'bg-slate-100 hover:bg-slate-200'"
-                  @click="upDepth = depth"
+                  @click="upDepth = depth; ancestorsExpanded = false"
                 >
                   {{ depth === 99 ? '全部祖先' : `向上 ${depth}` }}
                 </button>
@@ -298,6 +348,18 @@ onMounted(load)
             </button>
           </div>
         </aside>
+
+        <div v-if="graphFoldInfo" class="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          <template v-if="graphFoldInfo.folded">祖先较多，已按年级收起。</template>
+          <template v-else>已展开全部 {{ graphFoldInfo.count }} 个知识点。</template>
+          <button
+            type="button"
+            class="ml-2 font-semibold text-teal-700 hover:underline"
+            @click="ancestorsExpanded = !ancestorsExpanded"
+          >
+            {{ graphFoldInfo.folded ? `共 ${graphFoldInfo.count} 个，点此展开全部` : '按年级收起' }}
+          </button>
+        </div>
 
         <KnowledgeGraph
           :topics="neighborhood.topics"

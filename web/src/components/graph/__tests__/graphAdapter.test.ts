@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { foldDiagnosticLayout, graphElements, graphFromDiagnosticLayout, selectNeighborhood } from '../graphAdapter'
+import { foldDiagnosticLayout, foldNeighborhoodByGrade, graphElements, graphFromDiagnosticLayout, selectNeighborhood } from '../graphAdapter'
 import type { DependencyEdge, Topic } from '@/data/types'
 
 const topics: Topic[] = [
@@ -84,4 +84,33 @@ describe('graphAdapter', () => {
     expect(folded.topics.map((topic) => topic.id).sort()).toEqual(['cnm_root', 'cnm_target', 'grade-7'])
     expect(folded.topics.find((topic) => topic.id === 'grade-7')?.name).toContain('40')
     expect(folded.edges[0]?.indirect).toBe(true)
+  })
+
+
+  it('folds a long all-ancestor explore graph by grade while keeping selection and dependents', () => {
+    const manyTopics: Topic[] = Array.from({ length: 42 }, (_, index) => ({
+      id: `cnm_fold_${index}`,
+      name: `折叠节点 ${index}`,
+      domain: '数与代数',
+      grade: 7,
+      chapter: '七上 第1章',
+      type: 'conceptual',
+    }))
+    manyTopics[0]!.id = 'cnm_selected'
+    manyTopics[41]!.id = 'cnm_dependent'
+    const neighborhood = {
+      topics: manyTopics,
+      edges: [
+        { topicId: 'cnm_dependent', prerequisiteId: 'cnm_selected', strength: 'hard' as const },
+        { topicId: 'cnm_selected', prerequisiteId: 'cnm_fold_1', strength: 'hard' as const },
+      ],
+    }
+    const folded = foldNeighborhoodByGrade(
+      neighborhood,
+      'cnm_selected',
+      new Set(['cnm_dependent']),
+      () => '七年级',
+    )
+    expect(folded.topics.map((topic) => topic.id).sort()).toEqual(['cnm_dependent', 'cnm_selected', 'grade-7'])
+    expect(folded.topics.find((topic) => topic.id === 'grade-7')?.name).toContain('40')
   })

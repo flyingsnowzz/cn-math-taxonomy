@@ -30,46 +30,6 @@ test('chapter URL starts a whole-chapter target session', async ({ page }) => {
   await expect(page.getByText(/第 1 题/)).toBeVisible()
 })
 
-test('production service worker supports offline reload', async ({ page, context }) => {
-  await page.goto('/')
-  await page.waitForFunction(async () => {
-    if (!('serviceWorker' in navigator)) return false
-    const registration = await navigator.serviceWorker.getRegistration()
-    return registration?.active?.state === 'activated'
-  })
-  await page.waitForFunction(() => navigator.serviceWorker.controller !== null)
-  await page.reload()
-  await expect(page.getByRole('heading', { name: '先找到真正没有学会的那一步' })).toBeVisible()
-  await context.setOffline(true)
-  await page.reload()
-  await expect(page.getByRole('heading', { name: '先找到真正没有学会的那一步' })).toBeVisible()
-  await context.setOffline(false)
-})
-
-test('service worker always registers at the application root scope', async ({ page }) => {
-  await page.goto('/explore/?subject=math#cnm_221')
-  await page.waitForFunction(async () => {
-    if (!('serviceWorker' in navigator)) return false
-    const registrations = await navigator.serviceWorker.getRegistrations()
-    return registrations.some((registration) => new URL(registration.scope).pathname === '/')
-  })
-  const registrations = await page.evaluate(async () => {
-    const items = await navigator.serviceWorker.getRegistrations()
-    return items.map((registration) => {
-      const script = registration.active?.scriptURL
-        ?? registration.waiting?.scriptURL
-        ?? registration.installing?.scriptURL
-        ?? ''
-      return {
-        scope: new URL(registration.scope).pathname,
-        script: script ? new URL(script).pathname : '',
-      }
-    })
-  })
-  expect(registrations).toContainEqual({ scope: '/', script: '/sw.js' })
-  expect(registrations.filter((registration) => registration.scope.startsWith('/explore'))).toHaveLength(0)
-})
-
 test('knowledge graph remains usable at mobile width', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 })
   await page.goto('/explore/?subject=math#cnm_221')
@@ -176,4 +136,34 @@ test('diagnosis JSON export preserves v2 result details', async ({ page }) => {
   expect(payload.answers).toHaveLength(2)
   expect(payload.weakRoots[0].pendingPrereqs.length).toBeGreaterThan(0)
   expect(Array.isArray(payload.standards)).toBeTruthy()
+})
+
+test('explore restores the saved prerequisite depth from session storage', async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem('cnmExplore.depth', '3'))
+  await page.goto('/explore/?subject=math#cnm_221')
+  await expect(page.getByRole('button', { name: '向上 3' })).toHaveClass(/bg-teal-700/)
+  await expect(page).toHaveURL(/depth=3/)
+})
+
+test('whole-grade diagnosis includes both semesters for primary scope', async ({ page }) => {
+  await page.goto('/diagnose/?subject=english&grade=%E4%B8%89%E5%B9%B4%E7%BA%A7&limit=1')
+  await expect(page.getByText('整体诊断')).toBeVisible()
+  await page.getByRole('button', { name: '不会 / 跳过' }).click()
+  await page.getByRole('button', { name: '下一题' }).click()
+  await expect(page.getByText(/范围内共 71 个知识点/)).toBeVisible()
+})
+
+test('whole-grade math diagnosis includes upper and lower semester topics', async ({ page }) => {
+  await page.goto('/diagnose/?subject=math&grade=%E4%B8%83%E5%B9%B4%E7%BA%A7&limit=1')
+  await page.getByRole('button', { name: '不会 / 跳过' }).click()
+  await page.getByRole('button', { name: '下一题' }).click()
+  await expect(page.getByText(/范围内共 119 个知识点/)).toBeVisible()
+})
+
+test('explore all-ancestor graph can fold and expand by grade', async ({ page }) => {
+  await page.goto('/explore/?subject=math&depth=99#cnm_p111')
+  await expect(page.getByText('祖先较多，已按年级收起')).toBeVisible()
+  await expect(page.getByRole('button', { name: '共 50 个，点此展开全部' })).toBeVisible()
+  await page.getByRole('button', { name: '共 50 个，点此展开全部' }).click()
+  await expect(page.getByText('按年级收起')).toBeVisible()
 })
