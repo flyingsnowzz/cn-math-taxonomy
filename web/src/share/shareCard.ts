@@ -1,4 +1,5 @@
 import qrcode from 'qrcode-generator'
+import type { PublicRemedyReport } from '@/engine/report'
 import type { EngineChapterSummary, EngineSummary } from '@/engine/engineAdapter'
 import { getSubject } from '@/data/subjectRegistry'
 import type { SubjectCode } from '@/data/types'
@@ -311,6 +312,187 @@ export function downloadShareCard(model: ShareCardModel): void {
   const canvas = createShareCanvas(model)
   const link = document.createElement('a')
   link.download = `knowledge-diagnosis-${model.subject}-${new Date().toISOString().slice(0, 10)}.png`
+  link.href = canvas.toDataURL('image/png')
+  link.click()
+}
+
+export interface RemedyCardModel {
+  report: PublicRemedyReport
+  url: string
+}
+
+export function createRemedyCanvas(model: RemedyCardModel): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  canvas.width = WIDTH
+  canvas.height = HEIGHT
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('当前浏览器不支持 Canvas，无法生成分享图')
+
+  const { report, url } = model
+  const subject = getSubject(report.subject)
+
+  const bg = ctx.createLinearGradient(0, 0, 0, HEIGHT)
+  bg.addColorStop(0, '#e7f4f2')
+  bg.addColorStop(0.5, '#f5f8fc')
+  bg.addColorStop(1, '#e7eef6')
+  ctx.fillStyle = bg
+  ctx.fillRect(0, 0, WIDTH, HEIGHT)
+
+  ctx.fillStyle = '#0f766e'
+  ctx.beginPath()
+  ctx.moveTo(0, 0)
+  ctx.lineTo(WIDTH, 0)
+  ctx.lineTo(WIDTH, 420)
+  ctx.quadraticCurveTo(WIDTH, 462, WIDTH - 42, 462)
+  ctx.lineTo(42, 462)
+  ctx.quadraticCurveTo(0, 462, 0, 420)
+  ctx.closePath()
+  ctx.fill()
+
+  drawLogo(ctx, 60, 54, 86)
+  text(ctx, '中小学知识图谱', 168, 64, 800, 40, '#ffffff', 760)
+  text(ctx, `${subject.label}查漏补缺报告`, 168, 116, 500, 26, 'rgba(255,255,255,0.88)', 760)
+
+  ctx.fillStyle = '#ffffff'
+  ctx.font = font(800, 48)
+  wrapText(ctx, report.targetLabel.trim() || '自适应补救', 940, 2).forEach((line, index) => {
+    ctx.fillText(line, 64, 196 + index * 62)
+  })
+  text(ctx, report.generatedAt, 64, 336, 500, 26, 'rgba(255,255,255,0.9)')
+
+  const cardX = 48
+  const cardW = WIDTH - 96
+
+  // 大数字：已补上
+  ctx.save()
+  ctx.shadowColor = 'rgba(22,40,70,.12)'
+  ctx.shadowBlur = 28
+  ctx.shadowOffsetY = 10
+  fillRounded(ctx, cardX, 410, cardW, 240, 28, '#ffffff')
+  ctx.restore()
+  ctx.fillStyle = '#157a3a'
+  ctx.font = font(800, 110)
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+  ctx.fillText(String(report.totals.mastered), cardX + cardW / 2, 442)
+  ctx.fillStyle = '#162033'
+  ctx.font = font(700, 30)
+  const doneLabel = report.totals.mastered > 0 ? '个薄弱点已经复测通过、补上来了' : '个薄弱点已补上'
+  ctx.fillText(doneLabel, cardX + cardW / 2, 575)
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+
+  // 三个小指标
+  const mini = [
+    { value: report.totals.remaining, label: '还在补', color: '#b45309', bg: '#fef3c7' },
+    { value: report.totals.questionsDone, label: '已练习题', color: '#0f766e', bg: '#ccfbf1' },
+    { value: report.totals.rootsMastered, label: '根因已补', color: '#157a3a', bg: '#dcfce7' },
+  ]
+  const gap = 16
+  const chipW = (cardW - 40 - gap * 2) / 3
+  mini.forEach((item, index) => {
+    const x = cardX + 20 + index * (chipW + gap)
+    fillRounded(ctx, x, 680, chipW, 170, 18, item.bg)
+    ctx.fillStyle = item.color
+    ctx.font = font(800, 56)
+    ctx.textAlign = 'center'
+    ctx.fillText(String(item.value), x + chipW / 2, 706)
+    ctx.font = font(700, 25)
+    ctx.fillText(item.label, x + chipW / 2, 788)
+  })
+  ctx.textAlign = 'left'
+
+  // 明细列表
+  let y = 900
+  text(ctx, '补救路径', 64, y, 800, 34, '#162033')
+  y += 52
+  const items = report.path.slice(0, 6)
+  if (items.length === 0) {
+    ctx.strokeStyle = '#d5e0eb'
+    ctx.lineWidth = 2
+    strokeRounded(ctx, cardX, y, cardW, 92, 18)
+    text(ctx, '还没有补救记录，先做一次诊断。', 80, y + 30, 500, 28, '#5c6d82')
+    y += 108
+  } else {
+    items.forEach((item) => {
+      ctx.strokeStyle = '#d5e0eb'
+      ctx.lineWidth = 2
+      strokeRounded(ctx, cardX, y, cardW, 104, 18)
+      if (item.mastered) {
+        ctx.fillStyle = '#157a3a'
+        ctx.beginPath()
+        ctx.arc(cardX + 48, y + 52, 22, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#ffffff'
+        ctx.font = font(800, 26)
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText('✓', cardX + 48, y + 54)
+      } else {
+        ctx.fillStyle = item.kind === 'weak' ? '#b91c1c' : '#b45309'
+        ctx.beginPath()
+        ctx.arc(cardX + 48, y + 52, 22, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'top'
+      text(ctx, item.name, cardX + 88, y + 20, 700, 29, '#162033', cardW - 130)
+      text(
+        ctx,
+        item.mastered ? '已补上 · 复测通过' : item.kind === 'weak' ? '薄弱 · 待补救' : '不稳 · 待巩固',
+        cardX + 88,
+        y + 60,
+        500,
+        22,
+        item.mastered ? '#157a3a' : '#5c6d82',
+        cardW - 130,
+      )
+      y += 118
+    })
+    if (report.path.length > items.length) {
+      text(ctx, `另有 ${report.path.length - items.length} 个知识点，打开查看全部`, 64, y, 500, 24, '#5c6d82')
+    }
+  }
+
+  // 底部二维码
+  ctx.fillStyle = '#e7f3f1'
+  ctx.fillRect(0, 1504, WIDTH, HEIGHT - 1504)
+  ctx.fillStyle = '#d5e0eb'
+  ctx.fillRect(0, 1504, WIDTH, 2)
+  const qrSize = 292
+  const qrX = 72
+  const qrY = 1540
+  ctx.save()
+  ctx.shadowColor = 'rgba(22,40,70,.08)'
+  ctx.shadowBlur = 18
+  ctx.shadowOffsetY = 6
+  fillRounded(ctx, qrX - 16, qrY - 16, qrSize + 32, qrSize + 32, 20, '#ffffff')
+  ctx.restore()
+  const qrCanvas = document.createElement('canvas')
+  qrCanvas.width = qrSize
+  qrCanvas.height = qrSize
+  const qrContext = qrCanvas.getContext('2d')
+  if (qrContext) {
+    qrContext.fillStyle = '#ffffff'
+    qrContext.fillRect(0, 0, qrSize, qrSize)
+    drawQr(qrContext, url, qrSize)
+    ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize)
+  }
+  ctx.fillStyle = '#0f766e'
+  ctx.font = font(800, 42)
+  ctx.textBaseline = 'middle'
+  ctx.fillText('扫码测一测你家孩子', qrX + qrSize + 48, qrY + 108)
+  ctx.fillStyle = '#5c6d82'
+  ctx.font = font(500, 24)
+  ctx.fillText('找到真正没学会的那一步', qrX + qrSize + 48, qrY + 158)
+
+  return canvas
+}
+
+export function downloadRemedyCard(model: RemedyCardModel): void {
+  const canvas = createRemedyCanvas(model)
+  const link = document.createElement('a')
+  link.download = `remedy-report-${model.report.subject}-${new Date().toISOString().slice(0, 10)}.png`
   link.href = canvas.toDataURL('image/png')
   link.click()
 }

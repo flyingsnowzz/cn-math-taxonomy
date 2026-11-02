@@ -6,9 +6,9 @@
   "description": "Vue 3 frontend for the cn-math-taxonomy static knowledge graph.",
   "scripts": {
     "data:build": "node scripts/build-data-packages.mjs",
-    "predev": "npm run data:build",
+    "predev": "npm run legacy:sync && npm run data:build",
     "dev": "vite",
-    "prebuild": "npm run data:build && npm run data:verify",
+    "prebuild": "npm run legacy:sync && npm run data:build && npm run data:verify",
     "build": "vue-tsc --noEmit -p tsconfig.app.json && vite build && node scripts/generate-sw.mjs && node scripts/copy-data.mjs",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
     "lint": "eslint .",
@@ -16,7 +16,8 @@
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "data:verify": "node scripts/verify-data-packages.mjs",
-    "screenshots:review": "node scripts/capture-review-screens.mjs"
+    "screenshots:review": "node scripts/capture-review-screens.mjs",
+    "legacy:sync": "node scripts/sync-legacy.mjs"
   },
   "dependencies": {
     "cytoscape": "^3.34.4",
@@ -36,6 +37,7 @@
     "@types/node": "^26.6.6",
     "@vitejs/plugin-vue": "^6.0.10",
     "@vue/eslint-config-typescript": "^14.9.0",
+    "@vue/test-utils": "^2.5.1",
     "eslint": "^10.14.0",
     "eslint-plugin-vue": "^10.12.0",
     "globals": "^17.14.0",

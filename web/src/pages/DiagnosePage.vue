@@ -8,6 +8,10 @@ import { standardItems } from '@/data/guards'
 import { useDiagnoseStore } from '@/stores/diagnose'
 import { useChildrenStore } from '@/stores/children'
 import { useBlindspotsStore } from '@/stores/blindspots'
+import { useRemediationStore } from '@/stores/remediation'
+import { remedyEnabled } from '@/utils/feature'
+import { track } from '@/utils/track'
+import BaseButton from '@/components/base/BaseButton.vue'
 import { useDiagnosticSettingsStore } from '@/stores/diagnosticSettings'
 import KnowledgeGraph from '@/components/graph/KnowledgeGraph.vue'
 import QuestionFigure from '@/components/QuestionFigure.vue'
@@ -29,6 +33,54 @@ const queryConfirm = computed(() => {
   return settingsStore.confirmChoices.includes(value as 2 | 3 | 5) ? (value as 2 | 3 | 5) : undefined
 })
 const blindNotedKey = ref('')
+const remediation = useRemediationStore()
+
+// 补救入口：path 中 weak/shaky 的知识点数量；demo 模式不建计划。
+const remedyCount = computed(() =>
+  diagnose.summary?.path.filter((item) => item.status === 'weak' || item.status === 'shaky').length ?? 0,
+)
+const isDemoDiagnosis = computed(() => route.query.demo === '1')
+const remedyOn = remedyEnabled()
+const trackedDoneSeed = ref('')
+const usedQuestionIds = computed(() =>
+  (diagnose.session?.answers ?? [])
+    .map((answer) => answer.qid)
+    .filter((qid): qid is string => !!qid),
+)
+
+watch(
+  () => diagnose.session,
+  (session) => {
+    if (session && session.answers.length === 0 && !isDemoDiagnosis.value) {
+      track('diagnose_start', { subject: subject.value })
+    }
+  },
+)
+watch(
+  () => diagnose.summary,
+  (summaryValue) => {
+    if (summaryValue && !isDemoDiagnosis.value && diagnose.session?.seed !== trackedDoneSeed.value) {
+      trackedDoneSeed.value = diagnose.session?.seed ?? ''
+      track('diagnose_done', {
+        subject: subject.value,
+        weak: summaryValue.weak.length,
+        shaky: summaryValue.shaky.length,
+      })
+    }
+  },
+)
+
+function startRemedy() {
+  if (!diagnose.graph || !diagnose.summary || remedyCount.value === 0) return
+  remediation.startFromSummary(
+    diagnose.graph,
+    diagnose.summary,
+    usedQuestionIds.value,
+    subject.value,
+    diagnose.session?.seed,
+  )
+  void router.push('/remedy/')
+}
 
 const searchText = ref('')
 const numericAnswer = ref('')
@@ -1012,6 +1064,20 @@ onBeforeUnmount(() => {
             </ol>
           </div>
         </div>
+
+        <section
+          v-if="remedyOn && remedyCount > 0 && !isDemoDiagnosis"
+          class="rounded-2xl bg-teal-700 p-5 text-white shadow-sm"
+          data-test="remedy-cta"
+        >
+          <h3 class="text-lg font-semibold">开始针对性补救</h3>
+          <p class="mt-1 text-sm leading-6 text-teal-50">
+            共 {{ remedyCount }} 个薄弱或不稳的知识点。按学习路径逐个练习，每个点练完自动复测，确认补上再进下一个。
+          </p>
+          <BaseButton variant="secondary" class="mt-3" @click="startRemedy">
+            开始补救（{{ remedyCount }} 个薄弱点）
+          </BaseButton>
+        </section>
 
         <section v-if="diagnose.chapterSummaries.length" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div class="mb-4 flex items-center justify-between gap-3">

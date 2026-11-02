@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { remedyEnabled } from '@/utils/feature'
+import { readDueReviewsAll } from '@/stores/remediation'
 import ErrorState from '@/components/base/ErrorState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import { formatGradeForSubject as getSubjectGradeLabel, normalizeSubject } from '@/data/subjectRegistry'
@@ -18,6 +20,9 @@ const blindspotsStore = useBlindspotsStore()
 const loadToken = ref(0)
 
 const subject = computed<SubjectCode>(() => normalizeSubject(route.query.subject))
+const remedyOn = remedyEnabled()
+const dueReviewCount = ref(0)
+const dueReviewSubject = ref('')
 
 const subjectCopy: Record<SubjectCode, { coverage: string; sampleTopic: string }> = {
   math: { coverage: '数学：小学到高中；英语：三年级到高中；物理：初中到高中；语文、科学、道德与法治覆盖小学；历史、地理覆盖初中。', sampleTopic: '配方法' },
@@ -74,7 +79,13 @@ watch(subject, (value) => subjectStore.setSubject(value), { immediate: true })
 watch(subject, (value, previousValue) => {
   if (previousValue && value !== previousValue) void load()
 })
-onMounted(load)
+function onHomeMounted() {
+  void load()
+  const due = readDueReviewsAll()
+  dueReviewCount.value = due.length
+  dueReviewSubject.value = due[0]?.subject ?? ''
+}
+onMounted(onHomeMounted)
 </script>
 
 <template>
@@ -157,6 +168,30 @@ onMounted(load)
         </div>
       </section>
 
+      <section v-if="remedyOn" class="rounded-3xl border border-teal-200 bg-teal-50 p-6" data-testid="home-remedy-entry">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-bold text-teal-950">查漏补缺：测得出，也补得上</h2>
+            <p class="mt-1 text-sm text-teal-800">先诊断出薄弱根因，再按学习路径逐个练习、复测确认补上。进度只存在本设备。</p>
+          </div>
+          <RouterLink
+            :to="{ path: '/diagnose/', query: { subject } }"
+            class="rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+          >
+            查漏补缺 → 开始诊断
+          </RouterLink>
+        </div>
+      </section>
+
+      <RouterLink
+        v-if="remedyOn && dueReviewCount > 0"
+        :to="{ path: '/remedy/review', query: dueReviewSubject && dueReviewSubject !== 'math' ? { subject: dueReviewSubject } : {} }"
+        class="block rounded-3xl border border-blue-200 bg-blue-700 p-6 text-white"
+        data-testid="home-review-banner"
+      >
+        <h2 class="text-xl font-bold">今日复习：{{ dueReviewCount }} 个知识点到期</h2>
+        <p class="mt-1 text-sm text-blue-100">按 1、3、7、15 天间隔巩固，防止遗忘。</p>
+      </RouterLink>
 
       <section v-if="blindRows.length" class="rounded-3xl border border-amber-200 bg-amber-50 p-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
