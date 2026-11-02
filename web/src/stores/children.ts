@@ -28,6 +28,15 @@ export const useChildrenStore = defineStore('children', () => {
     currentId.value = legacyChildren.current()?.id ?? null
   }
 
+  if (typeof window !== 'undefined') {
+    window.addEventListener('cnm:sync-merged', (event) => {
+      const keys = (event as CustomEvent<{ keys: string[] }>).detail?.keys ?? []
+      if (keys.includes('cnmChildren.v1') || keys.includes('cnmChildren.records.v1')) refresh()
+    })
+  }
+
+  refresh()
+
   function setCurrent(id: string | null) {
     if (legacyChildren.setCurrent(id)) refresh()
   }

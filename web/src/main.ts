@@ -8,11 +8,22 @@ import {
   cleanupLegacyDevelopmentServiceWorker,
   cleanupScopedServiceWorkers,
 } from './utils/pwa'
+import { installDirtyHook } from './sync'
+import { useAuthStore } from './stores/auth'
 
 await cleanupScopedServiceWorkers()
 void cleanupLegacyDevelopmentServiceWorker()
 
-createApp(App).use(createPinia()).use(router).mount('#app')
+const app = createApp(App)
+const pinia = createPinia()
+app.use(pinia)
+app.use(router)
+
+// 云同步：legacy 模块通过 window 钩子上报写入；已登录则启动同步
+installDirtyHook()
+useAuthStore().initSyncIfLoggedIn()
+
+app.mount('#app')
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   void navigator.serviceWorker.register(SERVICE_WORKER_URL.pathname).catch(() => {

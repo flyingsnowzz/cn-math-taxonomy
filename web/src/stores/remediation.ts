@@ -131,12 +131,14 @@ export const useRemediationStore = defineStore('remediation', () => {
     usedQuestionIds: string[],
     nextSubject: SubjectCode,
     sessionSeed?: string,
+    now?: number,
   ): RemedyPlan {
     graph = nextGraph
     subject.value = nextSubject
     const next = createPlan(nextGraph, summary, {
       usedIds: usedQuestionIds,
       seed: hashSeed(sessionSeed),
+      now,
     })
     plan.value = next
     currentTopicId.value = firstOpenCardId(next)
@@ -241,6 +243,17 @@ export const useRemediationStore = defineStore('remediation', () => {
   const progress = computed<RemedyProgress | null>(() => (plan.value ? remedyProgress(plan.value) : null))
 
   const dueReviewIds = computed<string[]>(() => (plan.value ? dueReviews(plan.value, Date.now()) : []))
+
+  // 云同步：远端合并进来后重新载入本学科计划
+  if (typeof window !== 'undefined') {
+    window.addEventListener('cnm:sync-merged', (event) => {
+      const keys = (event as CustomEvent<{ keys: string[] }>).detail?.keys ?? []
+      if (keys.includes(storageKey(subject.value)) && graph) {
+        const file = readJson<RemedyFile>(storageKey(subject.value), isRemedyFile)
+        if (file) plan.value = file.plan
+      }
+    })
+  }
 
   return {
     subject,

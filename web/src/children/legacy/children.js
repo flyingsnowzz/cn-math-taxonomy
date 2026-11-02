@@ -14,7 +14,11 @@
     try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? fallback : v; } catch (e) { return fallback; }
   }
   function write(k, v) {
-    try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; }
+    try {
+      localStorage.setItem(k, JSON.stringify(v));
+      if (window.__cnmSyncDirty) window.__cnmSyncDirty(k);
+      return true;
+    } catch (e) { return false; }
   }
 
   function state() {

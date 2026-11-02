@@ -4,6 +4,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import BaseBadge from '@/components/base/BaseBadge.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import RemedyQuestionPanel from '@/components/remedy/RemedyQuestionPanel.vue'
+import TopicVideoEntry from '@/components/remedy/TopicVideoEntry.vue'
 import { useRemediationStore } from '@/stores/remediation'
 import { useDiagnoseStore } from '@/stores/diagnose'
 import { writeJson } from '@/utils/storage'
@@ -175,6 +176,7 @@ const nextCardHref = computed(() => {
           </span>
         </div>
         <p v-if="topic?.chapter" class="mt-0.5 text-xs text-slate-500">{{ topic.chapter }}</p>
+        <TopicVideoEntry :topic-id="topicId" variant="card" />
 
         <!-- 答题 -->
         <div v-if="remedy.currentItem && card.state !== 'help' && !helpQuestion" class="mt-4 space-y-4">
@@ -205,7 +207,10 @@ const nextCardHref = computed(() => {
             <p v-if="helpExplanation" class="mt-1 text-sm leading-6 text-amber-900">
               <b>解析：</b>{{ helpExplanation }}
             </p>
-            <BaseButton variant="primary" class="mt-3" @click="continueAfterHelp">我看懂了，继续</BaseButton>
+            <div class="mt-3 flex flex-wrap items-center gap-3">
+              <BaseButton variant="primary" @click="continueAfterHelp">我看懂了，继续</BaseButton>
+              <TopicVideoEntry :topic-id="topicId" variant="panel" />
+            </div>
           </div>
         </div>
 

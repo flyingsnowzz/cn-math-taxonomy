@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cnm
+      POSTGRES_PASSWORD: cnm_dev_pw
+      POSTGRES_DB: cnm
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - cnm_pg:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cnm"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    command: sh -c "node dist/db/migrate.js && node dist/index.js"
+    environment:
+      NODE_ENV: development
+      PORT: "8787"
+      DATABASE_URL: postgres://cnm:cnm_dev_pw@postgres:5432/cnm
+      JWT_SECRET: dev-only-change-me
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SMS_ADAPTER: mock
+      WECHAT_ADAPTER: mock
+    ports:
+      - "8787:8787"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  cnm_pg:

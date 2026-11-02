@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import BaseBadge from '@/components/base/BaseBadge.vue'
+import TopicVideoEntry from '@/components/remedy/TopicVideoEntry.vue'
 import type { RemedyCardView } from '@/stores/remediation'
 import type { RemedyCardState } from '@/engine/remediationAdapter'
 
@@ -62,7 +63,8 @@ const actionLabel = computed(() => {
       <p v-if="view.card.state === 'help'" class="mt-1 text-xs text-amber-700">
         有错题，先看解析再继续后面的练习。
       </p>
-      <p v-else-if="view.card.state === 'shortfall'" class="mt-1 text-xs text-amber-700">
+      <TopicVideoEntry v-if="view.card.state !== 'mastered'" :topic-id="view.card.topicId" variant="card" />
+      <p v-if="view.card.state === 'shortfall'" class="mt-1 text-xs text-amber-700">
         该知识点题库练习即将补充，可以先用已有题目继续。
       </p>
     </div>

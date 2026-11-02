@@ -1,12 +1,15 @@
 <script setup lang="ts">
+import PaywallDialog from '@/components/entitlements/PaywallDialog.vue'
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useSubjectStore } from '@/stores/subject'
+import { useAuthStore } from '@/stores/auth'
 import PwaInstall from '@/components/PwaInstall.vue'
 import { normalizeSubject } from '@/data/subjectRegistry'
 
 const route = useRoute()
 const subjectStore = useSubjectStore()
+const authStore = useAuthStore()
 const currentSubject = computed(() => normalizeSubject(route.query.subject))
 subjectStore.setSubject(currentSubject.value)
 
@@ -42,7 +45,16 @@ const nav = [
           </RouterLink>
         </nav>
 
-        <div class="ml-auto flex items-center gap-2">
+        <div class="ml-auto flex items-center gap-3">
+          <RouterLink v-if="!authStore.isLoggedIn" to="/login" class="text-sm font-medium text-slate-600 hover:text-teal-800" data-test="nav-login">
+            登录
+          </RouterLink>
+          <RouterLink v-else to="/account" class="text-sm font-medium text-slate-600 hover:text-teal-800" data-test="nav-account">
+            {{ authStore.displayName }}
+          </RouterLink>
+        </div>
+
+        <div class="ml-auto flex items-center gap-2 md:ml-2">
           <RouterLink
             v-for="subject in subjectStore.subjects"
             :key="subject.code"
@@ -58,6 +70,7 @@ const nav = [
       </div>
     </header>
     <PwaInstall />
+    <PaywallDialog />
     <main class="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
       <slot />
     </main>

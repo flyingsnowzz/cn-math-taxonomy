@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import legacyChildren from '@/children/legacy/children.js'
 import { SUBJECTS, subjectFromTopicId } from '@/data/subjectRegistry'
 import { readJson, writeJson } from '@/utils/storage'
+import { syncManager } from '@/sync'
 import type { AnswerResult, EngineSummary } from '@/engine/engineAdapter'
 import type { SubjectCode } from '@/data/types'
 
@@ -99,6 +100,13 @@ export const useBlindspotsStore = defineStore('blindspots', () => {
     version.value += 1
   }
 
+  if (typeof window !== 'undefined') {
+    window.addEventListener('cnm:sync-merged', (event) => {
+      const keys = (event as CustomEvent<{ keys: string[] }>).detail?.keys ?? []
+      if (keys.includes(STORAGE_KEY)) refresh()
+    })
+  }
+
   function noteResult(payload: NoteResultPayload): boolean {
     if (payload.demo) return false
     const file = readBlindFile()
@@ -135,7 +143,10 @@ export const useBlindspotsStore = defineStore('blindspots', () => {
     }
 
     const ok = writeJson(STORAGE_KEY, file)
-    if (ok) refresh()
+    if (ok) {
+      syncManager.markLocalChange(STORAGE_KEY)
+      refresh()
+    }
     return ok
   }
 
@@ -243,6 +254,7 @@ export const useBlindspotsStore = defineStore('blindspots', () => {
 
   function clear() {
     writeJson(STORAGE_KEY, emptyFile())
+    syncManager.markLocalChange(STORAGE_KEY)
     refresh()
   }
 

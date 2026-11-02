@@ -152,6 +152,16 @@ remediation Pinia store + 本地持久化
 
 ## M2：AI 讲解与扩题（第 6–10 周，开工前细化任务书）
 
+> 2026-11-02：本里程碑不在当前开发范围，后续配合其他 AI Agent。视频讲解接入框架已完成（T2.0）。
+
+### T2.0 ✅ 视频讲解接入框架（2026-11-02 已完成）
+
+- 数据层 `web/src/data/topicVideos.ts`：TopicVideo 结构（concept/walkthrough）、正式映射 `PUBLISHED_VIDEOS`（当前为空待填）、本机预览键 `cnmVideo.custom.v1`、字段校验。
+- 统一组件 `web/src/components/remedy/TopicVideoEntry.vue`：panel/card 两形态，无视频不渲染，点击记 `video_open`（track.ts 已加事件）。
+- 接入点：RemedyPracticePage 的 help 解析面板与标题区、RemedyCard。
+- 验证：数据层 4 个单测、组件 3 个单测、`web/e2e/remedy-video.spec.ts` 2 个 e2e（外链新标签打开 + 埋点、无视频时入口不渲染）。
+- 内容接入规范：[视频讲解接入框架](视频讲解接入框架.md)。
+
 只列目标，不预设实现任务（依赖 M0/M1 真实数据）：
 
 - T2.x 讲解代理（**M2 第一个任务才允许引入后端**）：服务端只做模型密钥中转与内容安全；提示词由知识点 `description + mastery_criteria + 错题解析 + 直接先修` 拼装，先补先修再讲题，末尾必返回一道跟练题（题目 id 必须来自题库或合规生成并过 verify）。
@@ -159,9 +169,11 @@ remediation Pinia store + 本地持久化
 - T2.x 扩题流水线：用 `cnmRemedy.shortfall.v1` 与诊断高频 weak 根因确定 Top 50 点，沿用仓库两轮审校方式扩到每点 10–12 题；扩题后 `scripts/quality_report.py` 指标不退化。
 - 决策门复算：被讲解点的复测通过率 vs 无讲解，无显著提升则按规划降级为解析+变式。
 
-## M3：账号、云存、支付（第 11–14 周，开工前细化任务书）
+## M3：账号、云同步、权益骨架（不收款，2026-11 已定稿）
 
-- T3.x 登录与会话云同步（本地存储成为缓存，冲突按 savedAt 最后写入）；T3.x 扫码支付与会员权益拦截（免费边界严格按规划文档 §5.1）；T3.x 埋点 transport 切到服务端；T3.x 公众号落地页与分享承接。
+- 工程方案、接口契约、资质清单：[M3工程方案.md](M3工程方案.md)（Express + PostgreSQL，腾讯云 CloudBase 云托管，域名 www.zyxw.cn，主站留在现有非腾讯云服务器）。
+- **可直接派给 Codex 的任务书**：[M3-Codex开发任务.md](M3-Codex开发任务.md)——T3.0 骨架（已完成）→ T3.1 密码登录/JWT/me → T3.2 短信 → T3.3 微信 → T3.4 前端账号层 → T3.5 云同步 → T3.6 埋点上报 → T3.7 权益骨架（不接支付，手工开通）→ T3.8 部署。一次会话只领一个任务。
+- 本阶段不接支付；付费点只做「会员功能，即将开放」骨架，种子用户在数据库手工开通。
 
 ---
 

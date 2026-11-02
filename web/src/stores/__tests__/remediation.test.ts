@@ -81,15 +81,15 @@ describe('remediation store', () => {
   it('相同 summary + 诊断 seed 生成确定性的计划（已做题被排除）', () => {
     const store1 = useRemediationStore()
     const { graph, summary } = fixture()
-    const p1 = store1.startFromSummary(graph, summary, [], SUBJECT, 'seed-xyz')
+    const p1 = store1.startFromSummary(graph, summary, [], SUBJECT, 'seed-xyz', 1000)
     const pinia2 = createPinia()
     setActivePinia(pinia2)
     const store2 = useRemediationStore()
-    const p2 = store2.startFromSummary(graph, summary, [], SUBJECT, 'seed-xyz')
+    const p2 = store2.startFromSummary(graph, summary, [], SUBJECT, 'seed-xyz', 1000)
     expect(JSON.stringify(p2)).toBe(JSON.stringify(p1))
 
     const used = ['a_q1', 'b_q1']
-    const p3 = store2.startFromSummary(graph, summary, used, SUBJECT, 'seed-xyz')
+    const p3 = store2.startFromSummary(graph, summary, used, SUBJECT, 'seed-xyz', 1000)
     const firstPlanCard = p3.cards[0]!
     const ids = firstPlanCard.practice.concat(firstPlanCard.retest)
     expect(ids.some((id) => used.includes(id))).toBe(false)

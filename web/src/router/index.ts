@@ -31,6 +31,24 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '补救计划' },
   },
   {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/pages/LoginPage.vue'),
+    meta: { title: '登录' },
+  },
+  {
+    path: '/login/callback/:provider',
+    name: 'wechat-callback',
+    component: () => import('@/pages/WechatCallbackPage.vue'),
+    meta: { title: '微信登录' },
+  },
+  {
+    path: '/account',
+    name: 'account',
+    component: () => import('@/pages/AccountPage.vue'),
+    meta: { title: '账号设置' },
+  },
+  {
     path: '/remedy/practice/:topicId',
     name: 'remedy-practice',
     component: () => import('@/pages/RemedyPracticePage.vue'),
