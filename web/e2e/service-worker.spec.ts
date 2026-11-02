@@ -25,7 +25,10 @@ test('service worker always registers at the application root scope', async ({ p
     const registrations = await navigator.serviceWorker.getRegistrations()
     return registrations.some((registration) => {
       const script = registration.active?.scriptURL
-      return new URL(registration.scope).pathname === '/' && Boolean(script)
+      const activeState = registration.active?.state
+      return new URL(registration.scope).pathname === '/'
+        && activeState === 'activated'
+        && script?.endsWith('/sw.js') === true
     })
   })
   const registrations = await page.evaluate(async () => {
