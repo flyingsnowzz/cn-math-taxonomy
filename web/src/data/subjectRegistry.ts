@@ -109,3 +109,45 @@ export function topicStage(topic: Topic): 'primary' | 'junior' | 'senior' {
   if (topic.grade <= 9) return 'junior'
   return 'senior'
 }
+
+
+const CN_NUMERALS = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九']
+
+export function formatGradeForSubject(subject: SubjectCode, grade: number): string {
+  if (grade >= 1 && grade <= 9) return `${CN_NUMERALS[grade]}年级`
+
+  if (subject === 'english') {
+    return {
+      10: '必修一',
+      11: '必修二',
+      12: '必修三',
+      13: '选必一',
+      14: '选必二',
+      15: '选必三',
+      16: '选必四',
+    }[grade] ?? `${grade} 年级`
+  }
+
+  if (subject === 'physics') {
+    return {
+      10: '必修一',
+      11: '必修二',
+      12: '必修三',
+      13: '选必一',
+      14: '选必二',
+      15: '选必三',
+    }[grade] ?? `${grade} 年级`
+  }
+
+  if (subject === 'math') {
+    return {
+      10: '高一',
+      11: '高二',
+      12: '选必一',
+      13: '选必二',
+      14: '选必三',
+    }[grade] ?? `${grade} 年级`
+  }
+
+  return `${grade} 年级`
+}

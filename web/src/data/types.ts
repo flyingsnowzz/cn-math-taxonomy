@@ -87,7 +87,7 @@ export interface CurriculumStandardsFile {
   [key: string]: unknown
 }
 
-export type AliasTargetList = string[] | { targets?: string[] }
+export type AliasTargetList = string[] | { name?: string; targets?: string[] }
 
 export interface IdAliasesFile {
   description?: string

@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ErrorState from '@/components/base/ErrorState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
-import { normalizeSubject } from '@/data/subjectRegistry'
+import { formatGradeForSubject as getSubjectGradeLabel, normalizeSubject } from '@/data/subjectRegistry'
 import { useSubjectStore } from '@/stores/subject'
 import { useGraphDataStore } from '@/stores/graphData'
 import { useBlindspotsStore } from '@/stores/blindspots'
@@ -18,12 +18,29 @@ const blindspotsStore = useBlindspotsStore()
 const loadToken = ref(0)
 
 const subject = computed<SubjectCode>(() => normalizeSubject(route.query.subject))
+
+const subjectCopy: Record<SubjectCode, { coverage: string; sampleTopic: string }> = {
+  math: { coverage: '数学：小学到高中；英语：三年级到高中；物理：初中到高中；语文、科学、道德与法治覆盖小学；历史、地理覆盖初中。', sampleTopic: '配方法' },
+  english: { coverage: '英语覆盖三年级到高中，包含小学、初中、高中必修和选择性必修内容。', sampleTopic: '现在进行时' },
+  physics: { coverage: '物理覆盖初中八、九年级，以及高中必修和选择性必修内容。', sampleTopic: '欧姆定律' },
+  chinese: { coverage: '语文覆盖统编版小学一至六年级。', sampleTopic: '静夜思' },
+  science: { coverage: '科学覆盖教科版小学一至六年级。', sampleTopic: '昼夜交替' },
+  morality: { coverage: '道德与法治覆盖统编版小学一至六年级。', sampleTopic: '国旗' },
+  history: { coverage: '历史覆盖统编版初中七至九年级。', sampleTopic: '远古时期的人类活动' },
+  geography: { coverage: '地理覆盖人教版初中七至八年级。', sampleTopic: '地球的宇宙环境' },
+}
+
 const topics = computed(() => graphStore.topicsFor(subject.value))
 const edges = computed(() => graphStore.edgesFor(subject.value))
 const globalStats = ref<GlobalStats | null>(null)
 const questionCount = computed(() => globalStats.value?.subjects[subject.value]?.questions ?? 0)
 const standards = computed(() => graphStore.standardsFor(subject.value))
 
+const demoTarget = computed(() =>
+  topics.value.find((topic) => topic.name.includes(subjectCopy[subject.value].sampleTopic))?.id
+  ?? topics.value[0]?.id
+  ?? '',
+)
 const blindRows = computed(() => blindspotsStore.list(subject.value, 5))
 
 const gradeGroups = computed(() => {
@@ -70,7 +87,7 @@ onMounted(load)
             先找到真正没有学会的那一步
           </h1>
           <p class="mt-5 max-w-3xl text-base leading-8 text-slate-600">
-            沿知识点先修关系浏览课程结构，并使用原有确定性诊断引擎进行自适应诊断。新版读取构建生成的静态学科数据包，Python 构建脚本和知识图谱生产流程保持不变。
+            {{ subjectCopy[subject].coverage }} 沿知识点先修关系浏览课程结构，并使用原有确定性诊断引擎进行自适应诊断。新版读取构建生成的静态学科数据包，Python 构建脚本和知识图谱生产流程保持不变。
           </p>
           <div class="mt-7 flex flex-wrap gap-3">
             <RouterLink
@@ -84,6 +101,13 @@ onMounted(load)
               class="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
               进入诊断
+            </RouterLink>
+            <RouterLink
+              v-if="demoTarget"
+              :to="{ path: '/diagnose/', query: { subject, target: demoTarget, demo: '1' } }"
+              class="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              先看一遍演示：{{ subjectCopy[subject].sampleTopic }}
             </RouterLink>
           </div>
         </div>
@@ -164,7 +188,7 @@ onMounted(load)
 
       <section>
         <div class="mb-4 flex items-center justify-between">
-          <h2 class="text-xl font-bold">按年级进入</h2>
+          <h2 class="text-xl font-bold">按年级 / 册次进入</h2>
           <RouterLink :to="{ path: '/explore/', query: { subject } }" class="text-sm font-medium text-teal-700">
             查看完整图谱 →
           </RouterLink>
@@ -176,7 +200,7 @@ onMounted(load)
             :to="{ path: '/explore/', query: { subject, grade: String(group.grade) } }"
             class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
           >
-            <div class="text-lg font-semibold">{{ group.grade }} 年级</div>
+            <div class="text-lg font-semibold">{{ getSubjectGradeLabel(subject, group.grade) }}</div>
             <p class="mt-2 text-sm text-slate-500">{{ group.count }} 个知识点</p>
           </RouterLink>
         </div>

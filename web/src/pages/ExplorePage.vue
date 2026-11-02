@@ -5,7 +5,7 @@ import ErrorState from '@/components/base/ErrorState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import KnowledgeGraph from '@/components/graph/KnowledgeGraph.vue'
 import { selectNeighborhood } from '@/components/graph/graphAdapter'
-import { getSubject, normalizeSubject } from '@/data/subjectRegistry'
+import { formatGradeForSubject, getSubject, normalizeSubject, topicStage } from '@/data/subjectRegistry'
 import { standardItems } from '@/data/guards'
 import { useGraphDataStore } from '@/stores/graphData'
 import { useSubjectStore } from '@/stores/subject'
@@ -16,7 +16,25 @@ const router = useRouter()
 const graphStore = useGraphDataStore()
 const subjectStore = useSubjectStore()
 
+type StageFilter = '' | 'primary' | 'junior' | 'senior'
+
+const stageToQuery: Record<Exclude<StageFilter, ''>, string> = {
+  primary: 'p',
+  junior: 'j',
+  senior: 'h',
+}
+const queryToStage: Record<string, Exclude<StageFilter, ''>> = {
+  p: 'primary',
+  j: 'junior',
+  h: 'senior',
+}
+
+function stageFromQuery(value: unknown): StageFilter {
+  return typeof value === 'string' && value in queryToStage ? queryToStage[value]! : ''
+}
+
 const searchText = ref(String(route.query.q ?? ''))
+const stageFilter = ref<StageFilter>(stageFromQuery(route.query.stage))
 const gradeFilter = ref(String(route.query.grade ?? ''))
 const domainFilter = ref(String(route.query.domain ?? ''))
 const upDepth = ref(2)
@@ -45,15 +63,30 @@ const standardsById = computed<Map<string, CurriculumStandardItem>>(() => {
 const gradeOptions = computed(() => [...new Set(topics.value.map((topic) => topic.grade))].sort((a, b) => a - b))
 const domainOptions = computed(() => [...new Set(topics.value.map((topic) => topic.domain))].sort())
 
+const aliasHitIds = computed(() => {
+  const query = searchText.value.trim().toLowerCase()
+  if (query.length < 2) return new Set<string>()
+
+  const hits = new Set<string>()
+  for (const [aliasId, spec] of Object.entries(graphStore.dataset?.aliases.aliases ?? {})) {
+    const aliasName = typeof spec === 'object' && !Array.isArray(spec) ? spec.name ?? '' : ''
+    if (!aliasId.toLowerCase().includes(query) && !aliasName.toLowerCase().includes(query)) continue
+    const targets = Array.isArray(spec) ? spec : (spec.targets ?? [])
+    targets.forEach((id) => hits.add(id))
+  }
+  return hits
+})
+
 const filteredTopics = computed(() => {
   const query = searchText.value.trim().toLowerCase()
   return topics.value
     .filter((topic) => {
+      if (stageFilter.value && topicStage(topic) !== stageFilter.value) return false
       if (gradeFilter.value && String(topic.grade) !== gradeFilter.value) return false
       if (domainFilter.value && topic.domain !== domainFilter.value) return false
       if (!query) return true
       const haystack = `${topic.id} ${topic.name} ${topic.chapter} ${topic.domain}`.toLowerCase()
-      return haystack.includes(query)
+      return haystack.includes(query) || aliasHitIds.value.has(topic.id)
     })
     .sort((a, b) => a.chapter.localeCompare(b.chapter, 'zh-Hans-CN') || a.id.localeCompare(b.id))
 })
@@ -88,6 +121,7 @@ async function load() {
 async function selectTopic(id: string) {
   const query: Record<string, string> = { subject: subject.value }
   if (searchText.value.trim()) query.q = searchText.value.trim()
+  if (stageFilter.value) query.stage = stageToQuery[stageFilter.value]
   if (gradeFilter.value) query.grade = gradeFilter.value
   if (domainFilter.value) query.domain = domainFilter.value
   if (upDepth.value !== 2) query.depth = String(upDepth.value)
@@ -97,6 +131,7 @@ async function selectTopic(id: string) {
 async function syncQuery() {
   const query: Record<string, string> = { subject: subject.value }
   if (searchText.value.trim()) query.q = searchText.value.trim()
+  if (stageFilter.value) query.stage = stageToQuery[stageFilter.value]
   if (gradeFilter.value) query.grade = gradeFilter.value
   if (domainFilter.value) query.domain = domainFilter.value
   if (upDepth.value !== 2) query.depth = String(upDepth.value)
@@ -107,12 +142,26 @@ async function syncQuery() {
   }
 }
 
+function syncFiltersFromRoute() {
+  searchText.value = String(route.query.q ?? '')
+  stageFilter.value = stageFromQuery(route.query.stage)
+  gradeFilter.value = route.query.grade == null ? '' : String(route.query.grade)
+  domainFilter.value = route.query.domain == null ? '' : String(route.query.domain)
+  listExpanded.value = false
+}
+
 watch(subject, (value) => subjectStore.setSubject(value), { immediate: true })
 watch(subject, (value, previousValue) => {
-  if (previousValue && value !== previousValue) void load()
+  if (previousValue && value !== previousValue) {
+    syncFiltersFromRoute()
+    void load()
+  }
 })
 watch(() => route.query.q, (value) => {
   searchText.value = String(value ?? '')
+})
+watch(() => route.query.stage, (value) => {
+  stageFilter.value = stageFromQuery(value)
 })
 watch(() => route.query.grade, (value) => {
   gradeFilter.value = value == null ? '' : String(value)
@@ -173,10 +222,27 @@ onMounted(load)
             placeholder="搜索名称、章节或编号"
             class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
           />
+          <div class="grid grid-cols-4 gap-1 rounded-xl bg-slate-100 p-1 text-xs">
+            <button
+              v-for="stage in [
+                { value: '', label: '全部' },
+                { value: 'primary', label: '小学' },
+                { value: 'junior', label: '初中' },
+                { value: 'senior', label: '高中' },
+              ]"
+              :key="stage.value"
+              type="button"
+              class="rounded-lg px-2 py-1.5 font-medium transition"
+              :class="stageFilter === stage.value ? 'bg-white text-teal-800 shadow-sm' : 'text-slate-600 hover:bg-white/70'"
+              @click="stageFilter = stage.value as StageFilter"
+            >
+              {{ stage.label }}
+            </button>
+          </div>
           <div class="grid grid-cols-2 gap-2">
             <select v-model="gradeFilter" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
               <option value="">全部年级</option>
-              <option v-for="grade in gradeOptions" :key="grade" :value="String(grade)">{{ grade }} 年级</option>
+              <option v-for="grade in gradeOptions" :key="grade" :value="String(grade)">{{ formatGradeForSubject(subject, grade) }}</option>
             </select>
             <select v-model="domainFilter" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
               <option value="">全部领域</option>

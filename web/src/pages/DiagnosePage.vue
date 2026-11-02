@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ErrorState from '@/components/base/ErrorState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
-import { getSubject, normalizeSubject, subjectFromTopicId } from '@/data/subjectRegistry'
+import { formatGradeForSubject, getSubject, normalizeSubject, subjectFromTopicId } from '@/data/subjectRegistry'
+import { standardItems } from '@/data/guards'
 import { useDiagnoseStore } from '@/stores/diagnose'
 import { useChildrenStore } from '@/stores/children'
 import { useBlindspotsStore } from '@/stores/blindspots'
 import { useDiagnosticSettingsStore } from '@/stores/diagnosticSettings'
 import KnowledgeGraph from '@/components/graph/KnowledgeGraph.vue'
 import QuestionFigure from '@/components/QuestionFigure.vue'
-import { graphForIds } from '@/components/graph/graphAdapter'
+import { foldDiagnosticLayout, graphFromDiagnosticLayout } from '@/components/graph/graphAdapter'
 import type { ChildDiagnosticRecord } from '@/children/legacy/children'
 import { downloadShareCard } from '@/share/shareCard'
-import type { Question, SubjectCode } from '@/data/types'
-import type { AnswerResult } from '@/engine/engineAdapter'
+import type { CurriculumStandardItem, Question, SubjectCode } from '@/data/types'
+import { buildDiagnosticLayout, type AnswerResult } from '@/engine/engineAdapter'
 
 const route = useRoute()
 const router = useRouter()
@@ -49,16 +50,114 @@ const progressPercent = computed(() => {
   return Math.round((diagnose.session.answers.length / diagnose.session.limit) * 100)
 })
 
+const diagnosticLayout = computed(() => {
+  if (!diagnose.graph || !diagnose.session || !diagnose.summary) return null
+  return buildDiagnosticLayout(diagnose.graph, diagnose.session, diagnose.summary)
+})
+const pathExpanded = ref(false)
 const pathGraph = computed(() => {
+  if (!diagnose.graph || !diagnosticLayout.value) return { topics: [], edges: [] }
+  if (diagnosticLayout.value.nodes.length <= 40 || pathExpanded.value) {
+    return graphFromDiagnosticLayout(diagnose.graph.topics, diagnosticLayout.value)
+  }
+  return foldDiagnosticLayout(
+    diagnose.graph.topics,
+    diagnosticLayout.value,
+    (grade) => formatGradeForSubject(subject.value, grade),
+  )
+})
+
+
+const pathStatusById = computed(() => new Map(
+  diagnosticLayout.value?.nodes.map((node) => [node.id, node.status]) ?? [],
+))
+const rootIds = computed(() => new Set(
+  diagnosticLayout.value?.nodes.filter((node) => node.isRoot).map((node) => node.id) ?? [],
+))
+const targetIds = computed(() => new Set(
+  diagnosticLayout.value?.nodes.filter((node) => node.isTarget).map((node) => node.id) ?? [],
+))
+const masteredSource = computed<Record<string, 'direct' | 'inferred'>>(() => {
+  const entries = diagnose.summary?.mastered
+    .map((id) => [id, diagnose.session?.status[id]?.src ?? 'direct'] as const)
+    ?? []
+  return Object.fromEntries(entries)
+})
+const resultStandards = computed(() => {
   const result = diagnose.summary
-  if (!result || !diagnose.session) return { topics: [], edges: [] }
-  const ids = Array.from(new Set([
+  if (!result || !diagnose.session) return [] as Array<CurriculumStandardItem & { topicNames: string[] }>
+  const topicIds = new Set([
     ...result.path.map((item) => item.id),
     ...result.targets,
     ...result.roots.map((root) => root.id),
-  ]))
-  return graphForIds(diagnose.graph?.topics ?? [], diagnose.edges, ids)
+  ])
+  const standardTopics = new Map<string, string[]>()
+  for (const id of topicIds) {
+    const topic = diagnose.graph?.byId[id]
+    for (const ref of topic?.standards ?? []) {
+      const names = standardTopics.get(ref.id) ?? []
+      names.push(topic?.name ?? id)
+      standardTopics.set(ref.id, names)
+    }
+  }
+  return standardItems(diagnose.standards)
+    .filter((item) => standardTopics.has(item.id))
+    .map((item) => ({ ...item, topicNames: [...new Set(standardTopics.get(item.id) ?? [])] }))
 })
+const answerRows = computed(() => {
+  const activeSession = diagnose.session
+  if (!activeSession) return []
+  return activeSession.answers.map((answer, index) => ({
+    index,
+    answer,
+    question: answer.qid ? diagnose.questionById.get(answer.qid) : null,
+  }))
+})
+const answerResultOptions: Array<{ value: AnswerResult; label: string }> = [
+  { value: 'correct', label: '答对' },
+  { value: 'wrong', label: '答错' },
+  { value: 'skip', label: '不会 / 跳过' },
+]
+
+function updateAnswerResult(index: number, event: Event) {
+  const value = (event.target as HTMLSelectElement).value as AnswerResult
+  diagnose.correctAnswer(index, value)
+}
+
+const resultHeadline = computed(() => {
+  const result = diagnose.summary
+  const activeSession = diagnose.session
+  if (!result || !activeSession) return ''
+
+  if (result.mode === 'screen') {
+    if (result.weak.length === 0 && result.shaky.length === 0) {
+      return result.untested.length
+        ? `已测到的知识点没有发现薄弱点，另有 ${result.untested.length} 个没测到。`
+        : '范围内的知识点都已掌握，没有发现薄弱点。'
+    }
+    return `范围内共 ${activeSession.targets.length} 个知识点：薄弱 ${result.weak.length}、不稳 ${result.shaky.length}、未测 ${result.untested.length}。先看下面的按章汇总，薄弱的章排在前面。`
+  }
+
+  const targetsMastered = activeSession.targets.every((id) => result.mastered.includes(id))
+  if (result.roots.length === 0 && result.shaky.length === 0 && targetsMastered) {
+    return '目标知识点已掌握，没有发现需要补的先修。'
+  }
+  if (result.roots.length === 0 && result.shaky.length === 0) {
+    return '没有判出薄弱点，但目标尚未全部测到。'
+  }
+  if (result.roots.length === 0) {
+    return `没有判出薄弱点，但有 ${result.shaky.length} 个知识点「不稳」（中途答错过、确认题答对），建议巩固。`
+  }
+  return `共发现 ${result.roots.length} 个薄弱根因${result.shaky.length ? `、${result.shaky.length} 个不稳的知识点` : ''}，按下面的学习路径从前往后补。`
+})
+const unconfirmedNames = computed(() => diagnose.summary?.unconfirmed.map((id) => diagnose.nameOf(id)) ?? [])
+const outOfScopeRoots = computed(() =>
+  diagnose.summary?.roots.filter((root) => root.outOfScopePrereqs.length > 0) ?? [],
+)
+
+function prerequisiteNames(ids: string[]): string {
+  return ids.map((id) => diagnose.nameOf(id)).join('」「')
+}
 
 const savedToProfile = ref(false)
 const savedSessionVersion = ref(0)
@@ -149,6 +248,8 @@ async function initialize() {
   savedToProfile.value = false
   autoStartedKey.value = ''
   blindNotedKey.value = ''
+  searchText.value = ''
+  pathExpanded.value = false
   diagnose.resetSessionState()
   const rawTarget = String(route.query.target ?? '')
   const firstRawTarget = rawTarget.split(',')[0]?.trim() ?? ''
@@ -218,28 +319,86 @@ function downloadResultPoster() {
     scope: diagnose.label,
     summary: diagnose.summary,
     nameOf: (id) => diagnose.nameOf(id),
+    chapters: diagnose.chapterSummaries,
     url: window.location.origin,
   })
 }
 
 
 function exportResultJson() {
-  if (!diagnose.session || !diagnose.summary) return
+  const activeSession = diagnose.session
+  const result = diagnose.summary
+  if (!activeSession || !result) return
+  const brief = (id: string) => ({ id, name: diagnose.nameOf(id) })
+
   const payload = {
-    tool: 'cn-math-taxonomy/vue-web',
-    version: 1,
+    tool: 'cn-math-taxonomy/diagnose',
+    version: 2,
+    mode: result.mode,
     generatedAt: new Date().toISOString(),
     subject: subject.value,
+    note: '自动判题是近似的，以参考答案为准。',
     label: diagnose.label,
-    session: {
-      targets: diagnose.session.targets,
-      mode: diagnose.session.mode,
-      limit: diagnose.session.limit,
-      seed: diagnose.session.seed,
-      answers: diagnose.session.answers,
-    },
-    summary: diagnose.summary,
+    targets: result.targets.map(brief),
+    limit: activeSession.limit,
+    seed: activeSession.seed,
+    asked: result.asked,
+    finished: result.finished,
+    limitReached: result.limitReached,
+    answers: answerRows.value.map((row) => ({
+      order: row.index + 1,
+      topicId: row.answer.id,
+      name: diagnose.nameOf(row.answer.id),
+      questionId: row.answer.qid,
+      difficulty: row.question?.difficulty,
+      type: row.question?.type,
+      prompt: row.question?.prompt,
+      userAnswer: row.answer.text == null ? null : row.answer.text,
+      result: row.answer.result,
+      referenceAnswer: row.question?.answer,
+      explanation: row.question?.explanation ?? '',
+    })),
+    chapters: diagnose.chapterSummaries.length
+      ? diagnose.chapterSummaries.map((chapter) => ({
+        label: chapter.label,
+        total: chapter.total,
+        mastered: chapter.mastered,
+        shaky: chapter.shaky,
+        weak: chapter.weak,
+        untested: chapter.untested,
+        weakTopics: chapter.weakIds.map(brief),
+        shakyTopics: chapter.shakyIds.map(brief),
+        untestedTopics: chapter.untestedIds.map(brief),
+      }))
+      : undefined,
+    weakRoots: result.roots.map((root) => ({
+      ...brief(root.id),
+      pendingPrereqs: root.pendingPrereqs,
+      outOfScopePrereqs: root.outOfScopePrereqs,
+      externalPrereqs: root.externalPrereqs,
+      masteryCriteria: diagnose.graph?.byId[root.id]?.mastery_criteria ?? [],
+      standards: diagnose.graph?.byId[root.id]?.standards?.map((item) => item.id) ?? [],
+    })),
+    path: result.path.map((item, index) => ({
+      order: index + 1,
+      ...brief(item.id),
+      status: item.status,
+      isRoot: item.isRoot,
+      isTarget: item.isTarget,
+    })),
+    weak: result.weak.map(brief),
+    shaky: result.shaky.map(brief),
+    mastered: result.mastered.map((id) => ({
+      ...brief(id),
+      source: activeSession.status[id]?.src ?? 'direct',
+    })),
+    untested: result.untested.map((id) => ({
+      ...brief(id),
+      external: Boolean(diagnose.graph?.byId[id]?.external),
+    })),
+    standards: resultStandards.value.map((standard) => ({ id: standard.id, text: standard.text })),
   }
+
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -421,11 +580,31 @@ watch(
   { immediate: true },
 )
 
+function openResultDetailsForPrint() {
+  document.querySelectorAll<HTMLDetailsElement>('.print-area details:not([open])').forEach((details) => {
+    details.open = true
+    details.dataset.autoOpen = '1'
+  })
+}
+
+function closeResultDetailsAfterPrint() {
+  document.querySelectorAll<HTMLDetailsElement>('details[data-auto-open]').forEach((details) => {
+    details.open = false
+    delete details.dataset.autoOpen
+  })
+}
+
 watch(subject, () => {
   void initialize()
 })
 onMounted(() => {
+  window.addEventListener('beforeprint', openResultDetailsForPrint)
+  window.addEventListener('afterprint', closeResultDetailsAfterPrint)
   void initialize()
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeprint', openResultDetailsForPrint)
+  window.removeEventListener('afterprint', closeResultDetailsAfterPrint)
 })
 </script>
 
@@ -737,10 +916,11 @@ onMounted(() => {
         </section>
       </template>
 
-      <section v-else-if="diagnose.summary" class="space-y-5">
+      <section v-else-if="diagnose.summary" class="print-area space-y-5">
         <div class="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200">
           <p class="text-sm font-medium text-teal-700">诊断结果：{{ diagnose.label }}</p>
           <h2 class="mt-2 text-2xl font-bold">共作答 {{ diagnose.summary.asked }} 题</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-600">{{ resultHeadline }}</p>
           <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div class="rounded-2xl bg-emerald-50 p-4"><b class="block text-2xl">{{ diagnose.summary.mastered.length }}</b>已掌握</div>
             <div class="rounded-2xl bg-amber-50 p-4"><b class="block text-2xl">{{ diagnose.summary.shaky.length }}</b>不稳</div>
@@ -748,6 +928,12 @@ onMounted(() => {
             <div class="rounded-2xl bg-slate-100 p-4"><b class="block text-2xl">{{ diagnose.summary.untested.length }}</b>未测</div>
           </div>
 
+          <p
+            v-if="unconfirmedNames.length"
+            class="mt-4 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900"
+          >
+            「{{ unconfirmedNames.join('」「') }}」答错过但还没完成确认就到了题量上限，没来得及复测，暂按薄弱处理。
+          </p>
           <p v-if="diagnose.summary.limitReached" class="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
             已达到题量上限（{{ diagnose.summary.limit }}），未测到的知识点标为“未测”。薄弱根因的先修中若有未测点，真正根因可能更靠前。
             <button
@@ -787,10 +973,25 @@ onMounted(() => {
           <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
             <h3 class="mb-3 font-semibold text-red-800">薄弱根因</h3>
             <ul class="space-y-2 text-sm">
-              <li v-for="root in diagnose.summary.roots" :key="root.id" class="rounded-xl bg-red-50 px-3 py-2">
-                {{ diagnose.nameOf(root.id) }}
-                <span v-if="root.pendingPrereqs.length" class="block text-xs text-red-600">
-                  还有 {{ root.pendingPrereqs.length }} 个先修因题量上限未测
+              <li v-for="root in diagnose.summary.roots" :key="root.id" class="space-y-2 rounded-xl bg-red-50 px-3 py-3">
+                <span class="font-semibold">{{ diagnose.nameOf(root.id) }}</span>
+                <span
+                  v-if="root.pendingPrereqs.length"
+                  class="block rounded-lg bg-amber-50 px-2.5 py-2 text-xs leading-5 text-amber-900"
+                >
+                  它的先修「{{ prerequisiteNames(root.pendingPrereqs) }}」没来得及测（题量用完），真正的根因可能更靠前。
+                </span>
+                <span
+                  v-if="root.outOfScopePrereqs.length"
+                  class="block rounded-lg bg-amber-50 px-2.5 py-2 text-xs leading-5 text-amber-900"
+                >
+                  它的前置知识「{{ prerequisiteNames(root.outOfScopePrereqs) }}」不在所选范围内，没有检查。
+                </span>
+                <span
+                  v-if="root.externalPrereqs.length"
+                  class="block text-xs leading-5 text-slate-500"
+                >
+                  无诊断题先修（未测）：{{ prerequisiteNames(root.externalPrereqs) }}
                 </span>
               </li>
               <li v-if="diagnose.summary.roots.length === 0" class="text-slate-500">未发现薄弱根因。</li>
@@ -814,35 +1015,81 @@ onMounted(() => {
 
         <section v-if="diagnose.chapterSummaries.length" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div class="mb-4 flex items-center justify-between gap-3">
-            <h3 class="font-semibold">章节筛查汇总</h3>
+            <h3 class="font-semibold">按章汇总</h3>
             <span class="text-xs text-slate-500">薄弱章节排在前面</span>
           </div>
+          <p class="mb-3 text-xs leading-5 text-slate-500">
+            每章的知识点掌握情况；色条从左到右表示掌握、不稳、薄弱、未测。
+          </p>
+          <p
+            v-if="outOfScopeRoots.length"
+            class="mb-3 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900"
+          >
+            部分薄弱点的前置知识在所选年级之外，未检查（涉及 {{ outOfScopeRoots.length }} 个薄弱点，如「{{ outOfScopeRoots.slice(0, 3).map((root) => diagnose.nameOf(root.id)).join('」「') }}」）。可对这些知识点单独诊断，沿先修继续往前查。
+          </p>
           <div class="grid gap-2 md:grid-cols-2">
-            <div
+            <details
               v-for="chapter in diagnose.chapterSummaries"
               :key="chapter.key"
               class="rounded-xl border border-slate-200 p-3"
+              :open="chapter.weak > 0 || chapter.shaky > 0"
             >
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-sm font-semibold">{{ chapter.volume }} · {{ chapter.label }}</p>
-                  <p class="mt-0.5 text-xs text-slate-500">{{ chapter.total }} 个知识点</p>
+              <summary class="cursor-pointer">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold">{{ chapter.volume }} · {{ chapter.label }}</p>
+                    <p class="mt-0.5 text-xs text-slate-500">{{ chapter.total }} 个知识点</p>
+                  </div>
+                  <div class="shrink-0 text-right text-xs">
+                    <span class="mr-1 text-emerald-700">{{ chapter.mastered }} 掌握</span>
+                    <span class="mr-1 text-amber-700">{{ chapter.shaky }} 不稳</span>
+                    <span class="mr-1 text-red-700">{{ chapter.weak }} 薄弱</span>
+                    <span class="text-slate-500">{{ chapter.untested }} 未测</span>
+                  </div>
                 </div>
-                <div class="shrink-0 text-right text-xs">
-                  <span class="mr-1 text-emerald-700">{{ chapter.mastered }} 掌握</span>
-                  <span class="mr-1 text-amber-700">{{ chapter.shaky }} 不稳</span>
-                  <span class="text-red-700">{{ chapter.weak }} 薄弱</span>
+                <div class="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100">
+                  <span class="bg-emerald-500" :style="{ width: `${chapter.total ? (chapter.mastered / chapter.total) * 100 : 0}%` }" />
+                  <span class="bg-amber-400" :style="{ width: `${chapter.total ? (chapter.shaky / chapter.total) * 100 : 0}%` }" />
+                  <span class="bg-red-500" :style="{ width: `${chapter.total ? (chapter.weak / chapter.total) * 100 : 0}%` }" />
+                  <span class="bg-slate-300" :style="{ width: `${chapter.total ? (chapter.untested / chapter.total) * 100 : 0}%` }" />
                 </div>
+              </summary>
+              <div class="mt-3 space-y-2 text-xs leading-5 text-slate-600">
+                <div v-if="chapter.weakIds.length" class="flex flex-wrap items-center gap-2">
+                  <span class="mr-1 font-semibold text-red-700">薄弱</span>
+                  <span>{{ chapter.weakIds.map((id) => diagnose.nameOf(id)).join('、') }}</span>
+                  <RouterLink
+                    class="rounded bg-red-50 px-2 py-1 font-medium text-red-700 hover:bg-red-100"
+                    :to="{ path: '/diagnose/', query: { subject, target: chapter.weakIds.join(',') } }"
+                  >
+                    再测本章薄弱
+                  </RouterLink>
+                </div>
+                <div v-if="chapter.shakyIds.length" class="mt-2 flex flex-wrap items-center gap-2">
+                  <span class="mr-1 font-semibold text-amber-700">不稳</span>
+                  <span>{{ chapter.shakyIds.map((id) => diagnose.nameOf(id)).join('、') }}</span>
+                  <RouterLink
+                    class="rounded bg-amber-50 px-2 py-1 font-medium text-amber-700 hover:bg-amber-100"
+                    :to="{ path: '/diagnose/', query: { subject, target: chapter.shakyIds.join(',') } }"
+                  >
+                    再测本章不稳
+                  </RouterLink>
+                </div>
+                <p v-if="!chapter.weakIds.length && !chapter.shakyIds.length">
+                  {{ chapter.untested ? `没有发现薄弱或不稳的点，另有 ${chapter.untested} 个没测到。` : '没有发现薄弱或不稳的点。' }}
+                </p>
               </div>
-              <div class="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100">
-                <span class="bg-emerald-500" :style="{ width: `${chapter.total ? (chapter.mastered / chapter.total) * 100 : 0}%` }" />
-                <span class="bg-amber-400" :style="{ width: `${chapter.total ? (chapter.shaky / chapter.total) * 100 : 0}%` }" />
-                <span class="bg-red-500" :style="{ width: `${chapter.total ? (chapter.weak / chapter.total) * 100 : 0}%` }" />
-                <span class="bg-slate-300" :style="{ width: `${chapter.total ? (chapter.untested / chapter.total) * 100 : 0}%` }" />
-              </div>
-            </div>
+            </details>
           </div>
         </section>
+
+        <p v-if="diagnosticLayout && diagnosticLayout.nodes.length > 40" class="rounded-xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+          <template v-if="!pathExpanded">路径较长，已按年级收起中间知识点；根因和目标仍单独画出。</template>
+          <template v-else>已展开全部 {{ diagnosticLayout.nodes.length }} 个知识点。</template>
+          <button class="ml-2 font-semibold text-teal-700 hover:underline" type="button" @click="pathExpanded = !pathExpanded">
+            {{ pathExpanded ? '按年级收起' : `展开全部 ${diagnosticLayout.nodes.length} 个` }}
+          </button>
+        </p>
 
         <KnowledgeGraph
           v-if="pathGraph.topics.length"
@@ -850,8 +1097,82 @@ onMounted(() => {
           :edges="pathGraph.edges"
           :selected-id="diagnose.summary.targets[0] ?? pathGraph.topics[0]?.id ?? ''"
           :subject="subject"
+          :status-by-id="pathStatusById"
+          :root-ids="rootIds"
+          :target-ids="targetIds"
           class="mt-4 min-h-[360px] sm:min-h-[420px]"
         />
+
+        <section class="grid gap-4 lg:grid-cols-2">
+          <details class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <summary class="cursor-pointer font-semibold">已掌握的知识点（{{ diagnose.summary.mastered.length }}）</summary>
+            <ul class="mt-3 space-y-2 text-sm leading-6 text-slate-600">
+              <li v-for="id in diagnose.summary.mastered" :key="id" class="flex flex-wrap gap-2 rounded-xl bg-emerald-50 px-3 py-2">
+                <span>{{ diagnose.nameOf(id) }}</span>
+                <span class="text-xs text-emerald-700">{{ masteredSource[id] === 'inferred' ? '由后续知识点答对推断' : '直接答对' }}</span>
+              </li>
+              <li v-if="!diagnose.summary.mastered.length" class="text-slate-500">无。</li>
+            </ul>
+          </details>
+          <details class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <summary class="cursor-pointer font-semibold">未测的知识点（{{ diagnose.summary.untested.length }}）</summary>
+            <ul class="mt-3 space-y-2 text-sm leading-6 text-slate-600">
+              <li v-for="id in diagnose.summary.untested" :key="id" class="rounded-xl bg-slate-100 px-3 py-2">{{ diagnose.nameOf(id) }}</li>
+              <li v-if="!diagnose.summary.untested.length" class="text-slate-500">无。</li>
+            </ul>
+          </details>
+        </section>
+
+        <section v-if="resultStandards.length" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <h3 class="font-semibold">关联课标条目</h3>
+          <div class="mt-3 space-y-3 text-sm leading-6 text-slate-600">
+            <div v-for="standard in resultStandards" :key="standard.id" class="rounded-xl bg-slate-50 p-3">
+              <b>{{ standard.id }}</b>
+              <p class="mt-1">{{ standard.text }}</p>
+              <p class="mt-1 text-xs text-slate-500">对应知识点：{{ standard.topicNames.join('、') }}</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <h3 class="font-semibold">答题记录（可更正）</h3>
+          <p class="mt-1 text-xs leading-5 text-slate-500">自动判题可能判错。修改某题结果后，会用原有确定性引擎重新计算后续状态和学习路径。</p>
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full min-w-[760px] text-left text-sm">
+              <thead class="text-xs text-slate-500">
+                <tr>
+                  <th class="py-2 pr-3">#</th>
+                  <th class="py-2 pr-3">知识点 / 题目</th>
+                  <th class="py-2 pr-3">你的答案</th>
+                  <th class="py-2 pr-3">结果</th>
+                  <th class="py-2 pr-3">参考答案</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in answerRows" :key="`${row.answer.qid}-${row.index}`" class="border-t border-slate-100">
+                  <td class="py-2 pr-3 text-slate-400">{{ row.index + 1 }}</td>
+                  <td class="py-2 pr-3">
+                    <b>{{ diagnose.nameOf(row.answer.id) }}</b>
+                    <span class="mt-0.5 block max-w-80 truncate text-xs text-slate-500">{{ row.question?.prompt ?? '' }}</span>
+                  </td>
+                  <td class="py-2 pr-3 text-slate-600">{{ row.answer.text || '—' }}</td>
+                  <td class="py-2 pr-3">
+                    <select
+                      class="rounded-lg border border-slate-200 px-2 py-1 text-xs"
+                      :value="row.answer.result"
+                      @change="updateAnswerResult(row.index, $event)"
+                    >
+                      <option v-for="option in answerResultOptions" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                      </option>
+                    </select>
+                  </td>
+                  <td class="max-w-64 truncate py-2 pr-3 text-xs text-slate-500">{{ row.question?.answer ?? '' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </section>
     </template>
   </div>

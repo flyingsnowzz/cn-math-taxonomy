@@ -10,6 +10,8 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const parsedBackup = ref<ChildrenBackup | null>(null)
 const importError = ref('')
 const exportError = ref('')
+const exportStatus = ref('')
+const MAX_BACKUP_BYTES = 10 * 1024 * 1024
 
 const emptyForm: ChildForm = { name: '', grade: childrenStore.grades[0] ?? '', textbook: childrenStore.textbooks[0] ?? '' }
 const form = reactive<ChildForm>({ ...emptyForm })
@@ -51,6 +53,11 @@ async function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
+  if (file.size > MAX_BACKUP_BYTES) {
+    importError.value = '备份文件不能超过 10 MB。'
+    input.value = ''
+    return
+  }
   try {
     const text = await file.text()
     parsedBackup.value = childrenStore.parseBackupText(text)
@@ -72,8 +79,10 @@ function confirmImport() {
 
 function exportBackup() {
   exportError.value = ''
+  exportStatus.value = ''
   try {
     childrenStore.downloadBackup()
+    exportStatus.value = '已生成备份文件，请在浏览器下载列表中查看。'
   } catch (error) {
     exportError.value = error instanceof Error ? error.message : '导出失败'
   }
@@ -127,6 +136,12 @@ function exportBackup() {
             <div class="mt-4 flex flex-wrap gap-2">
               <button class="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs hover:bg-slate-200" @click="childrenStore.setCurrent(child.id)">设为当前</button>
               <button class="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs hover:bg-slate-200" @click="startEdit(child.id)">编辑</button>
+              <RouterLink
+                class="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs hover:bg-slate-200"
+                :to="{ path: '/children/history/', query: { child: child.id } }"
+              >
+                诊断记录
+              </RouterLink>
               <button class="rounded-lg bg-red-50 px-2.5 py-1.5 text-xs text-red-700 hover:bg-red-100" @click="removeChild(child.id)">删除</button>
             </div>
           </article>
@@ -173,6 +188,7 @@ function exportBackup() {
               <input ref="fileInput" type="file" accept=".json,application/json" class="sr-only" @change="onFileChange">
             </label>
           </div>
+          <p v-if="exportStatus" class="mt-3 rounded-lg bg-emerald-50 p-2 text-xs text-emerald-700">{{ exportStatus }}</p>
           <p v-if="exportError" class="mt-3 rounded-lg bg-red-50 p-2 text-xs text-red-700">{{ exportError }}</p>
           <p v-if="importError" class="mt-3 rounded-lg bg-red-50 p-2 text-xs text-red-700">{{ importError }}</p>
 

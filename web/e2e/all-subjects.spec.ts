@@ -24,3 +24,19 @@ for (const subject of subjects) {
     await expect(page.locator('[data-testid="explore-topic-count"]')).toHaveText(`${subject.topics} 个知识点`)
   })
 }
+
+
+test('explore stage filter narrows English to high-school books', async ({ page }) => {
+  await page.goto('/explore/?subject=english&stage=h')
+  await expect(page.locator('[data-testid="explore-topic-count"]')).toHaveText('259 个知识点')
+  await expect(page.locator('select').first().locator('option[value="16"]')).toHaveText('选必四')
+  await expect(page).toHaveURL(/stage=h/)
+})
+
+
+test('home provides subject-specific English demo entry', async ({ page }) => {
+  await page.goto('/?subject=english')
+  const demo = page.getByRole('link', { name: /先看一遍演示：现在进行时/ })
+  await expect(demo).toBeVisible()
+  await expect(demo).toHaveAttribute('href', /subject=english.*demo=1/)
+})

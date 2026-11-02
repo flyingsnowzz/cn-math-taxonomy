@@ -54,7 +54,7 @@ test('child profile backup import keeps a profile available in the Vue app', asy
   await expect(page.getByText('1 条本地诊断记录')).toBeVisible()
 
   await page.goto('/children/history/')
-  await page.getByRole('heading', { name: '诊断历史' }).waitFor()
-  await expect(page.getByText('配方法')).toBeVisible()
-  await expect(page.getByText('薄弱 1')).toBeVisible()
+  await page.getByRole('heading', { name: /诊断历史/ }).waitFor()
+  await expect(page.getByRole('heading', { name: '配方法' })).toBeVisible()
+  await expect(page.getByText('薄弱 1', { exact: true })).toBeVisible()
 })

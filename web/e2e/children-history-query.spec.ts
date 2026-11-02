@@ -43,3 +43,30 @@ test('history page reacts to child and subject query changes without reload', as
   await page.goto('/children/history/?child=child-b&subject=english')
   await expect(page.getByRole('heading', { name: '英语记录' })).toBeVisible()
 })
+
+
+test('history shows machine-wide blind spots even without a child profile', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('cnmBlind.local.v1', JSON.stringify({
+      v: 1,
+      byId: {
+        cnm_221: {
+          id: 'cnm_221',
+          subject: 'math',
+          status: 'weak',
+          root: true,
+          hits: 1,
+          wrongs: 2,
+          lastAt: '2026-11-02T00:00:00.000Z',
+          lastLabel: '配方法',
+          lastKey: 'local',
+        },
+      },
+    }))
+  })
+  await page.goto('/children/history/?subject=math')
+  await expect(page.getByRole('heading', { name: '本机盲区（未建档）' })).toBeVisible()
+  await expect(page.getByRole('link', { name: /配方法/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '九上 第二十五章 一元二次方程 25.2' })).toBeVisible()
+  await expect(page.getByRole('link', { name: '再测本章薄弱（1）' })).toBeVisible()
+})

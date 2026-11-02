@@ -7,6 +7,7 @@ import { buildChapterTree, type ChapterTree } from '@/data/chapterTree'
 import { readJson, remove, writeJson } from '@/utils/storage'
 import type {
   DependencyEdge,
+  GraphDataset,
   IdAliasesFile,
   Question,
   SubjectCode,
@@ -84,6 +85,7 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
   const label = ref('')
   const savedAt = ref('')
   const aliases = ref<IdAliasesFile | null>(null)
+  const standards = ref<GraphDataset['standards']>({ items: [] })
   const chapterTree = ref<ChapterTree>({ volumes: [], chaptersByKey: new Map() })
   const subject = ref<SubjectCode>('math')
   const loadError = ref('')
@@ -98,7 +100,10 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
     return summarize(graph.value, session.value)
   })
   const topicById = computed<Map<string, Topic>>(() => new Map(graph.value?.topics.map((topic) => [topic.id, topic])))
-  const chapterSummaries = ref<EngineChapterSummary[]>([])
+  const chapterSummaries = computed<EngineChapterSummary[]>(() => {
+    if (!graph.value || !session.value || session.value.mode !== 'screen') return []
+    return chapterSummary(graph.value, session.value)
+  })
 
   const questionById = computed<Map<string, Question>>(() => {
     const map = new Map<string, Question>()
@@ -179,6 +184,7 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
       chapterTree.value = buildChapterTree(topics)
       graph.value = buildGraph(topics, subjectEdges, questions)
       aliases.value = dataset.aliases
+      standards.value = dataset.standards
     } catch (error) {
       loadError.value = error instanceof Error ? error.message : '诊断数据加载失败'
     }
@@ -194,7 +200,6 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
     session.value = null
     label.value = ''
     savedAt.value = ''
-    chapterSummaries.value = []
   }
 
   function clearSession() {
@@ -214,7 +219,6 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
       avoid: options.avoid ?? seenQuestionIds.value,
     }
     session.value = createSession(graph.value, targets, sessionOptions)
-    chapterSummaries.value = sessionOptions.mode === 'screen' ? chapterSummary(graph.value, session.value) : []
     label.value = nextLabel || targets.map((id) => graph.value?.byId[id]?.name ?? id).join('、')
     savedAt.value = ''
     persist()
@@ -382,8 +386,34 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
       savedAt: savedAt.value,
     })
     session.value = replayed
-    chapterSummaries.value = replayed.mode === 'screen' ? chapterSummary(graph.value, replayed) : []
     persist()
+  }
+
+  function rebuildWithAnswers(answers: EngineSession['answers']) {
+    if (!graph.value || !session.value) return
+    const replayed = buildReplay({
+      v: 2,
+      mode: session.value.mode,
+      targets: session.value.targets,
+      limit: session.value.limit,
+      confirm: session.value.confirm,
+      label: label.value,
+      answers,
+      seed: session.value.seed,
+      avoid: session.value.avoid,
+      savedAt: savedAt.value,
+    })
+    session.value = replayed
+    persist()
+  }
+
+  function correctAnswer(index: number, result: AnswerResult) {
+    if (!session.value || index < 0 || index >= session.value.answers.length) return
+    rebuildWithAnswers(
+      session.value.answers.map((answer, answerIndex) =>
+        answerIndex === index ? { ...answer, result } : answer,
+      ),
+    )
   }
 
   function undo() {
@@ -402,7 +432,6 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
       savedAt: savedAt.value,
     })
     session.value = replayed
-    chapterSummaries.value = replayed.mode === 'screen' ? chapterSummary(graph.value, replayed) : []
     persist()
   }
 
@@ -418,6 +447,8 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
     session,
     label,
     savedAt,
+    aliases,
+    standards,
     subject,
     loadError,
     currentItem,
@@ -441,6 +472,8 @@ export const useDiagnoseStore = defineStore('diagnose', () => {
     submit,
     judge,
     undo,
+    rebuildWithAnswers,
+    correctAnswer,
     extendSession,
     nameOf,
   }

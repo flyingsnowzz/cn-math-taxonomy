@@ -2,6 +2,7 @@ import type { AliasTargetList, DependencyEdge, IdAliasesFile, Question, Topic } 
 import engine, {
   type AnswerResult,
   type EngineGraph,
+  type EngineLayout,
   type EngineNextItem,
   type EngineSession,
   type EngineChapterSummary,
@@ -11,6 +12,7 @@ import engine, {
 export type {
   AnswerResult,
   EngineGraph,
+  EngineLayout,
   EngineNextItem,
   EngineSession,
   EngineChapterSummary,
@@ -96,6 +98,14 @@ export interface ParsedChapter {
 export function parseChapter(chapter: string): ParsedChapter {
   const parsed = engine.parseChapter(chapter) as ParsedChapter
   return parsed
+}
+
+export function buildDiagnosticLayout(
+  graph: EngineGraph,
+  session: EngineSession,
+  summary: EngineSummary,
+): EngineLayout {
+  return engine.layout(graph, session, summary)
 }
 
 export function gradeTargets(

@@ -1,5 +1,5 @@
 import qrcode from 'qrcode-generator'
-import type { EngineSummary } from '@/engine/engineAdapter'
+import type { EngineChapterSummary, EngineSummary } from '@/engine/engineAdapter'
 import { getSubject } from '@/data/subjectRegistry'
 import type { SubjectCode } from '@/data/types'
 
@@ -7,6 +7,7 @@ export interface ShareCardModel {
   subject: SubjectCode
   scope: string
   summary: EngineSummary
+  chapters?: EngineChapterSummary[]
   nameOf: (id: string) => string
   url?: string
 }
@@ -207,10 +208,18 @@ export function createShareCanvas(model: ShareCardModel): HTMLCanvasElement {
   ctx.textAlign = 'left'
 
   let y = 692
-  const weakSpots = summary.weak.slice(0, 3).map((id) => ({
-    title: model.nameOf(id),
-    detail: '需要回到前置知识进行巩固',
-  }))
+  const screenSpots = model.chapters
+    ?.filter((chapter) => chapter.weak > 0 || chapter.shaky > 0)
+    .slice(0, 3)
+    .map((chapter) => ({
+      title: chapter.label,
+      detail: `薄弱 ${chapter.weak} · 不稳 ${chapter.shaky} · 未测 ${chapter.untested}`,
+    })) ?? []
+  const weakSpots = screenSpots.length > 0
+    ? screenSpots
+    : summary.roots
+      .slice(0, 3)
+      .map((root) => ({ title: model.nameOf(root.id), detail: '需要优先回到前置知识进行巩固' }))
   text(ctx, '最需要关注的知识点', 64, y, 800, 34, '#162033')
   y += 52
   if (weakSpots.length === 0) {

@@ -35,6 +35,26 @@ export interface EngineNextItem {
   attempt: number
 }
 
+export interface EngineLayoutNode extends EnginePathNode {
+  layer: number
+  col: number
+  cols: number
+}
+
+export interface EngineLayoutEdge {
+  from: string
+  to: string
+  direct: boolean
+  strength: string
+}
+
+export interface EngineLayout {
+  nodes: EngineLayoutNode[]
+  edges: EngineLayoutEdge[]
+  layers: number
+  maxCols: number
+}
+
 export interface EnginePathNode {
   id: string
   status: 'mastered' | 'shaky' | 'weak' | 'unknown'
@@ -53,6 +73,9 @@ export interface EngineChapterSummary {
   shaky: number
   weak: number
   untested: number
+  weakIds: string[]
+  shakyIds: string[]
+  untestedIds: string[]
 }
 
 export interface EngineSummary {
@@ -117,6 +140,7 @@ export interface DiagEngineApi {
     options?: Record<string, unknown>,
   ) => EngineSession
   summarize: (graph: EngineGraph, session: EngineSession) => EngineSummary
+  layout: (graph: EngineGraph, session: EngineSession, summary: EngineSummary) => EngineLayout
   chapterSummary: (graph: EngineGraph, session: EngineSession) => EngineChapterSummary[]
   statusOf: (session: EngineSession, topicId: string) => string
   subjectOf: (topic: Topic) => SubjectCode

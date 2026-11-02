@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 
 test('home loads subject statistics and navigates to the graph', async ({ page }) => {
@@ -45,6 +46,30 @@ test('production service worker supports offline reload', async ({ page, context
   await context.setOffline(false)
 })
 
+test('service worker always registers at the application root scope', async ({ page }) => {
+  await page.goto('/explore/?subject=math#cnm_221')
+  await page.waitForFunction(async () => {
+    if (!('serviceWorker' in navigator)) return false
+    const registrations = await navigator.serviceWorker.getRegistrations()
+    return registrations.some((registration) => new URL(registration.scope).pathname === '/')
+  })
+  const registrations = await page.evaluate(async () => {
+    const items = await navigator.serviceWorker.getRegistrations()
+    return items.map((registration) => {
+      const script = registration.active?.scriptURL
+        ?? registration.waiting?.scriptURL
+        ?? registration.installing?.scriptURL
+        ?? ''
+      return {
+        scope: new URL(registration.scope).pathname,
+        script: script ? new URL(script).pathname : '',
+      }
+    })
+  })
+  expect(registrations).toContainEqual({ scope: '/', script: '/sw.js' })
+  expect(registrations.filter((registration) => registration.scope.startsWith('/explore'))).toHaveLength(0)
+})
+
 test('knowledge graph remains usable at mobile width', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 })
   await page.goto('/explore/?subject=math#cnm_221')
@@ -59,7 +84,8 @@ test('single-volume screen diagnosis exposes chapter summary metadata', async ({
   await page.getByRole('button', { name: '下一题' }).click()
   await page.getByRole('button', { name: '不会 / 跳过' }).click()
   await page.getByRole('button', { name: '下一题' }).click()
-  await expect(page.getByRole('heading', { name: '章节筛查汇总' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '按章汇总' })).toBeVisible()
+  await expect(page.getByRole('link', { name: '再测本章薄弱' }).first()).toBeVisible()
 })
 
 test('legacy file routes redirect to Vue routes', async ({ page }) => {
@@ -78,4 +104,76 @@ test('explore filters and depth are reflected in shareable URL', async ({ page }
   await expect(page).toHaveURL(/grade=9/)
   await expect(page).toHaveURL(/domain=.*%E6%95%B0/)
   await expect(page).toHaveURL(/depth=1/)
+})
+
+
+test('target diagnosis result names prerequisite topics left untested by the limit', async ({ page }) => {
+  await page.goto('/diagnose/?target=cnm_221&limit=2')
+  await page.getByRole('button', { name: '不会 / 跳过' }).click()
+  await page.getByRole('button', { name: '下一题' }).click()
+  await page.getByRole('button', { name: '不会 / 跳过' }).click()
+  await page.getByRole('button', { name: '下一题' }).click()
+
+  await expect(page.getByText(/它的先修「.*没来得及测（题量用完）/)).toBeVisible()
+})
+
+
+test('legacy external alias id finds its formal target topics in graph search', async ({ page }) => {
+  await page.goto('/explore/?subject=math&q=cnm_ext_002')
+  await expect(page.locator('[data-testid="explore-topic-count"]')).toHaveText('4 个知识点')
+})
+
+
+test('diagnosis result exposes standards and editable answer log', async ({ page }) => {
+  await page.goto('/diagnose/?target=cnm_221&limit=2')
+  for (let index = 0; index < 2; index += 1) {
+    await page.getByRole('button', { name: '不会 / 跳过' }).click()
+    await page.getByRole('button', { name: '下一题' }).click()
+  }
+
+  await expect(page.getByRole('heading', { name: '关联课标条目' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '答题记录（可更正）' })).toBeVisible()
+  await expect(page.locator('tbody select').first().locator('option')).toHaveCount(3)
+  await page.locator('tbody select').first().selectOption('correct')
+  await expect(page.locator('tbody select').first()).toHaveValue('correct')
+})
+
+
+test('PWA install prompt appears and accepts a browser installation event', async ({ page }) => {
+  await page.goto('/')
+  await page.evaluate(() => {
+    const event = new Event('beforeinstallprompt', { bubbles: true, cancelable: true })
+    Object.assign(event, {
+      preventDefault() {},
+      prompt: async () => {},
+      userChoice: Promise.resolve({ outcome: 'accepted' }),
+    })
+    window.dispatchEvent(event)
+  })
+
+  await expect(page.getByRole('region', { name: '添加到桌面' })).toBeVisible()
+  await page.getByRole('button', { name: '添加' }).click()
+  await expect(page.getByRole('region', { name: '添加到桌面' })).toHaveCount(0)
+})
+
+
+test('diagnosis JSON export preserves v2 result details', async ({ page }) => {
+  await page.goto('/diagnose/?target=cnm_221&limit=2')
+  for (let index = 0; index < 2; index += 1) {
+    await page.getByRole('button', { name: '不会 / 跳过' }).click()
+    await page.getByRole('button', { name: '下一题' }).click()
+  }
+
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: '导出 JSON' }).click()
+  const download = await downloadPromise
+  const path = await download.path()
+  expect(path).toBeTruthy()
+  const payload = JSON.parse(readFileSync(path!, 'utf8'))
+
+  expect(payload.version).toBe(2)
+  expect(payload.tool).toBe('cn-math-taxonomy/diagnose')
+  expect(payload.answers).toHaveLength(2)
+  expect(payload.weakRoots[0].pendingPrereqs.length).toBeGreaterThan(0)
+  expect(Array.isArray(payload.standards)).toBeTruthy()
 })

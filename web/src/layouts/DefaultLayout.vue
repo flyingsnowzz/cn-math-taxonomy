@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useSubjectStore } from '@/stores/subject'
+import PwaInstall from '@/components/PwaInstall.vue'
 import { normalizeSubject } from '@/data/subjectRegistry'
 
 const route = useRoute()
@@ -56,6 +57,7 @@ const nav = [
         </div>
       </div>
     </header>
+    <PwaInstall />
     <main class="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
       <slot />
     </main>

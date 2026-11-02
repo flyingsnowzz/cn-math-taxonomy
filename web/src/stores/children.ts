@@ -64,6 +64,10 @@ export const useChildrenStore = defineStore('children', () => {
     return legacyChildren.saveRecord(id, record)
   }
 
+  function latestStatus(id: string, subjectCode?: string) {
+    return legacyChildren.latestStatus(id, subjectCode || undefined)
+  }
+
   function exportBackup(): ChildrenBackup {
     return legacyChildren.exportBackup()
   }
@@ -117,6 +121,7 @@ export const useChildrenStore = defineStore('children', () => {
     removeRecord,
     recordsOf,
     saveRecord,
+    latestStatus,
     exportBackup,
     downloadBackup,
     parseBackupText,

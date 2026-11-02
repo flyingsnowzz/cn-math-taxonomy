@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeSubject, subjectFromTopicId, subjectOfTopic } from '../subjectRegistry'
+import { formatGradeForSubject, normalizeSubject, subjectFromTopicId, subjectOfTopic } from '../subjectRegistry'
 
 describe('subjectRegistry', () => {
   it('recognizes each official subject prefix', () => {
@@ -17,6 +17,15 @@ describe('subjectRegistry', () => {
     expect(normalizeSubject('unknown')).toBe('math')
     expect(normalizeSubject(undefined)).toBe('math')
     expect(subjectFromTopicId('abc_001')).toBeNull()
+  })
+
+  it('formats high-school grade numbers with subject-specific book labels', () => {
+    expect(formatGradeForSubject('math', 10)).toBe('高一')
+    expect(formatGradeForSubject('math', 12)).toBe('选必一')
+    expect(formatGradeForSubject('english', 10)).toBe('必修一')
+    expect(formatGradeForSubject('english', 16)).toBe('选必四')
+    expect(formatGradeForSubject('physics', 15)).toBe('选必三')
+    expect(formatGradeForSubject('english', 3)).toBe('三年级')
   })
 
   it('uses explicit topic.subject before id prefix', () => {
