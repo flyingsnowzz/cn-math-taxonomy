@@ -100,16 +100,19 @@ Implemented:
 - subject-scoped data packages and separate question packages;
 - home page with subject statistics and grade entry;
 - knowledge graph browser using Cytoscape + dagre;
-- subject, grade, domain, text and ancestor-depth filtering;
+- 8-subject packages, hard/soft/indirect relation styles, local graph tooltips and legends;
+- subject, stage, grade, domain, text/alias and ancestor-depth filtering;
+- all-ancestor grade folding with expand/collapse controls and `cnmExplore.depth` session preference;
 - textbook volume/chapter browser;
 - topic details, standards and diagnostic sample questions;
 - target, multi-target and chapter diagnosis;
-- grade/book screen diagnosis through the legacy deterministic engine;
+- target, chapter, whole-book, whole-grade and high-school book screen diagnosis through the legacy deterministic engine;
+- 8-subject screen summaries with chapter weak/shaky lists and retest links;
 - choice/numeric answering, answer/explanation review, manual fallback and skipping;
 - mastery/shaky/weak/untested result summary;
-- learning-path graph;
-- weak roots and prerequisite path;
-- undo, restart, print and JSON export;
+- learning-path graph using the legacy engine layout, with target/root/status colors, indirect edges and grade folding;
+- weak roots and prerequisite names;
+- undo, restart, print expansion, v2-compatible JSON export and editable answer log;
 - Canvas share poster with QR code;
 - configurable target/screen question limits and confirmation count;
 - screen-result question-limit extension;
@@ -117,21 +120,19 @@ Implemented:
 - local weak/shaky blindspot ledger with one-click retesting;
 - demo mode (`/diagnose/?target=cnm_221&demo=1`);
 - localStorage session compatibility using the same subject keys;
-- child profiles, local history and JSON backup import/export by reusing the audited legacy profile logic, verified by an E2E import/history test;
-- PWA manifest, icons and generated service worker;
-- hashed asset precache and visited data runtime caching;
+- child profiles, local history, machine-wide blind spots, chapter-grouped retesting and JSON backup import/export by reusing the audited legacy profile logic;
+- PWA manifest, icons, install prompt and generated service worker;
+- root-scope service worker registration, deep-route cleanup, hashed asset precache and visited data runtime caching;
 - Vitest unit tests and Playwright end-to-end tests;
 - GitHub Actions workflow at `../.github/workflows/web.yml`, including Vue and legacy regression jobs;
 - production static build in `dist/`.
 
 Not yet replaced or still requiring product review:
 
-- the original 1:1 visual design of every legacy screen;
-- complete chapter/section tree parity for every textbook-specific naming case;
-- full share-poster pixel parity with the old image;
-- finer mobile layouts for long chapter trees and dense result content;
-- production deployment switch and Cloudflare Pages project update;
-- future backend/PostgreSQL productization.
+- final human visual acceptance of the Vue screens;
+- production/preview deployment and Cloudflare Pages project switch, both requiring explicit authorization;
+- unrelated third-party promotional entries from the legacy pages are intentionally not migrated;
+- future backend/PostgreSQL/account-system productization is intentionally out of scope.
 
 ## Important Paths
 
