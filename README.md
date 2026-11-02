@@ -10,6 +10,8 @@
 
 **[→ 在线试用诊断（演示：配方法）](https://math.pansgo.com/diagnose/?target=cnm_221&demo=1)** · [首页](https://math.pansgo.com/) · [知识图谱](https://math.pansgo.com/explore/) · [诊断工具](https://math.pansgo.com/diagnose/) · [GitHub Pages 备份](https://xiaoyang111222.github.io/cn-math-taxonomy/)
 
+**数据/题库/诊断引擎商业授权：见 [COMMERCIAL.md](COMMERCIAL.md)（数据包、API、硬件与出版合作）。**
+
 ![首页：三步说明、实时统计和年级入口](screenshots/06-home.png)
 
 ![知识图谱：配方法附近的先修（向上 2 层，向下 1 层）](screenshots/07-explore-221.png)

@@ -1,0 +1,1219 @@
+{
+  "package": "cn-math-taxonomy-sample",
+  "version": "0.1.0-sample",
+  "license": "sample-evaluation",
+  "scope": "人教版 九上 一元二次方程 章（含一层先修节点）",
+  "counts": {
+    "topics": 19,
+    "chapter_topics": 10,
+    "prereq_topics": 9,
+    "edges": 23,
+    "questions": 41
+  },
+  "topics": [
+    {
+      "id": "cnm_p205",
+      "name": "百分数的应用",
+      "domain": "数与代数",
+      "grade": 6,
+      "semester": "上",
+      "chapter": "六年级上册 第5单元 百分数",
+      "type": "application",
+      "description": "会解决求一个数比另一个数多百分之几、增长率这类简单问题。",
+      "mastery_criteria": [
+        "能先求出增加或减少的量",
+        "能把增加量除以原来的数写成百分数"
+      ],
+      "diagnostic_question": {
+        "question": "50 的 20% 是多少？",
+        "answer": "10"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:3.NA.08",
+          "confidence": "inferred",
+          "note": "增长率是百分数应用，内容要求没有单独点名，待核。"
+        }
+      ]
+    },
+    {
+      "id": "cnm_041",
+      "name": "一元一次方程的概念",
+      "domain": "数与代数",
+      "grade": 7,
+      "semester": "上",
+      "chapter": "七上 第五章 一元一次方程 5.1.2",
+      "type": "conceptual",
+      "description": "只含一个未知数、未知数的次数为 1 且等号两边都是整式的方程叫一元一次方程。",
+      "mastery_criteria": [
+        "能判断一元一次方程",
+        "能说出标准形式 ax+b=0"
+      ],
+      "diagnostic_question": {
+        "question": "x²-1=0 是一元一次方程吗？",
+        "answer": "不是，未知数次数为 2"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.24",
+          "confidence": "inferred",
+          "note": "一元一次方程的概念是“能解一元一次方程”的前提，课标未单列"
+        }
+      ]
+    },
+    {
+      "id": "cnm_045",
+      "name": "列一元一次方程解应用题的步骤",
+      "domain": "数与代数",
+      "grade": 7,
+      "semester": "上",
+      "chapter": "七上 第五章 一元一次方程 5.3",
+      "type": "modeling",
+      "description": "经过设未知数、找等量关系、列方程、求解、检验作答的建模过程解决实际问题。",
+      "mastery_criteria": [
+        "能找出题目中的等量关系",
+        "能规范完成设、列、解、验、答"
+      ],
+      "diagnostic_question": {
+        "question": "一个数的 3 倍减 5 等于 16，求这个数。",
+        "answer": "设该数为 x，3x-5=16，x=7"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.23",
+          "confidence": "exact"
+        }
+      ]
+    },
+    {
+      "id": "cnm_048",
+      "name": "销售与利润问题",
+      "domain": "数与代数",
+      "grade": 7,
+      "semester": "上",
+      "chapter": "七上 第五章 一元一次方程 5.3",
+      "type": "modeling",
+      "description": "结合标价、折扣、进价、利润率，用方程解决销售问题。",
+      "mastery_criteria": [
+        "能区分售价、进价和利润",
+        "能用方程求解折扣或进价"
+      ],
+      "diagnostic_question": {
+        "question": "一件商品进价 80 元，利润率 25%，售价多少？",
+        "answer": "100 元"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.23",
+          "confidence": "exact"
+        }
+      ]
+    },
+    {
+      "id": "cnm_075",
+      "name": "开平方与平方根的求法",
+      "domain": "数与代数",
+      "grade": 7,
+      "semester": "下",
+      "chapter": "七下 第八章 实数 8.1",
+      "type": "procedural",
+      "description": "会用平方运算求完全平方数的平方根，了解 √(a²)=|a|，并能用计算器求近似值。",
+      "mastery_criteria": [
+        "能求常见完全平方数的平方根",
+        "会化简 √(a²)"
+      ],
+      "diagnostic_question": {
+        "question": "计算 √49、√(-5)²、±√(1/4)。",
+        "answer": "7；5；±1/2"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.10",
+          "confidence": "exact"
+        }
+      ]
+    },
+    {
+      "id": "cnm_146",
+      "name": "多项式乘多项式",
+      "domain": "数与代数",
+      "grade": 8,
+      "semester": "上",
+      "chapter": "八上 第十六章 整式的乘法 16.2",
+      "type": "procedural",
+      "description": "用一个多项式的每一项乘另一个多项式的每一项，再把积相加。",
+      "mastery_criteria": [
+        "能展开 (a+b)(c+d)",
+        "不漏项不错号"
+      ],
+      "diagnostic_question": {
+        "question": "计算 (x+2)(x-3)。",
+        "answer": "x²-x-6"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.18",
+          "confidence": "exact"
+        }
+      ]
+    },
+    {
+      "id": "cnm_148",
+      "name": "完全平方公式",
+      "domain": "数与代数",
+      "grade": 8,
+      "semester": "上",
+      "chapter": "八上 第十六章 整式的乘法 16.3",
+      "type": "procedural",
+      "description": "(a±b)²=a²±2ab+b²，可用图形面积解释。",
+      "mastery_criteria": [
+        "能写出公式",
+        "不漏中间项"
+      ],
+      "diagnostic_question": {
+        "question": "展开 (2x-3)²。",
+        "answer": "4x²-12x+9"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.19",
+          "confidence": "exact"
+        }
+      ]
+    },
+    {
+      "id": "cnm_154",
+      "name": "综合运用因式分解",
+      "domain": "数与代数",
+      "grade": 8,
+      "semester": "上",
+      "chapter": "八上 第十七章 因式分解 17.2",
+      "type": "procedural",
+      "description": "一般先提公因式，再用公式，直至不能再分解。",
+      "mastery_criteria": [
+        "能确定步骤",
+        "分解彻底"
+      ],
+      "diagnostic_question": {
+        "question": "分解 2x³-8x。",
+        "answer": "2x(x+2)(x-2)"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.20",
+          "confidence": "exact"
+        }
+      ]
+    },
+    {
+      "id": "cnm_171",
+      "name": "最简二次根式与分母有理化",
+      "domain": "数与代数",
+      "grade": 8,
+      "semester": "下",
+      "chapter": "八下 第十九章 二次根式 19.2",
+      "type": "procedural",
+      "description": "被开方数不含能开尽方的因数或因式、也不含分母的二次根式是最简二次根式，会化简并有理化分母。",
+      "mastery_criteria": [
+        "能判断最简二次根式",
+        "能化简 1/√2 等"
+      ],
+      "diagnostic_question": {
+        "question": "化简 √18 和 1/√2。",
+        "answer": "3√2；√2/2"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.13",
+          "confidence": "exact"
+        }
+      ]
+    },
+    {
+      "id": "cnm_219",
+      "name": "一元二次方程的概念",
+      "domain": "数与代数",
+      "grade": 9,
+      "semester": "上",
+      "chapter": "九上 第二十五章 一元二次方程 25.1",
+      "type": "conceptual",
+      "description": "只含一个未知数、未知数最高次数为 2 的整式方程叫一元二次方程，一般形式 ax²+bx+c=0（a≠0）。",
+      "mastery_criteria": [
+        "能判断一元二次方程",
+        "能指出二次项系数、一次项系数和常数项"
+      ],
+      "diagnostic_question": {
+        "question": "x²-5x+6=0 的二次项系数、一次项系数、常数项分别是什么？",
+        "answer": "1，-5，6"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.27",
+          "confidence": "inferred",
+          "note": "一元二次方程的概念是解法的前提，课标未单列"
+        }
+      ]
+    },
+    {
+      "id": "cnm_220",
+      "name": "直接开平方法",
+      "domain": "数与代数",
+      "grade": 9,
+      "semester": "上",
+      "chapter": "九上 第二十五章 一元二次方程 25.2",
+      "type": "procedural",
+      "description": "形如 x²=p 或 (x+m)²=p 的方程，利用平方根的意义直接求解。",
+      "mastery_criteria": [
+        "能判断可用直接开平方法",
+        "能求出两个根并考虑 p<0 无解"
+      ],
+      "diagnostic_question": {
+        "question": "解方程 (x-1)²=9。",
+        "answer": "x=4 或 x=-2"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.27",
+          "confidence": "inferred",
+          "note": "直接开平方法是配方法的特例，课标未单列"
+        }
+      ]
+    },
+    {
+      "id": "cnm_221",
+      "name": "配方法",
+      "domain": "数与代数",
+      "grade": 9,
+      "semester": "上",
+      "chapter": "九上 第二十五章 一元二次方程 25.2",
+      "type": "procedural",
+      "description": "通过配方把方程化为 (x+m)²=n 的形式再求解，配方时加上一次项系数一半的平方。",
+      "mastery_criteria": [
+        "能完成配方",
+        "能用配方法解方程"
+      ],
+      "diagnostic_question": {
+        "question": "用配方法解 x²-4x-1=0。",
+        "answer": "(x-2)²=5，x=2±√5"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.27",
+          "confidence": "exact"
+        }
+      ]
+    },
+    {
+      "id": "cnm_222",
+      "name": "公式法与求根公式",
+      "domain": "数与代数",
+      "grade": 9,
+      "semester": "上",
+      "chapter": "九上 第二十五章 一元二次方程 25.2",
+      "type": "procedural",
+      "description": "由配方法推出求根公式 x=(-b±√(b²-4ac))/(2a)（b²-4ac≥0），并用其解方程。",
+      "mastery_criteria": [
+        "能写出求根公式",
+        "能正确代入求解并化简"
+      ],
+      "diagnostic_question": {
+        "question": "用公式法解 2x²-3x-2=0。",
+        "answer": "x=(3±5)/4，即 x=2 或 x=-1/2"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.27",
+          "confidence": "exact"
+        }
+      ]
+    },
+    {
+      "id": "cnm_223",
+      "name": "根的判别式",
+      "domain": "数与代数",
+      "grade": 9,
+      "semester": "上",
+      "chapter": "九上 第二十五章 一元二次方程 25.2",
+      "type": "conceptual",
+      "description": "Δ=b²-4ac 决定根的情况：Δ>0 两个不等实根，Δ=0 两个相等实根，Δ<0 无实根。",
+      "mastery_criteria": [
+        "能由 Δ 判断根的个数",
+        "能求参数范围"
+      ],
+      "diagnostic_question": {
+        "question": "x²-4x+k=0 有两个不相等实根，求 k 的范围。",
+        "answer": "k<4"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.28",
+          "confidence": "exact"
+        }
+      ]
+    },
+    {
+      "id": "cnm_224",
+      "name": "因式分解法",
+      "domain": "数与代数",
+      "grade": 9,
+      "semester": "上",
+      "chapter": "九上 第二十五章 一元二次方程 25.2",
+      "type": "procedural",
+      "description": "把方程一边化为 0，另一边分解成一次因式的积，利用“若 ab=0 则 a=0 或 b=0”求解。",
+      "mastery_criteria": [
+        "能先移项再因式分解",
+        "能求出两个根"
+      ],
+      "diagnostic_question": {
+        "question": "解方程 x²-5x+6=0。",
+        "answer": "x=2 或 x=3"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.27",
+          "confidence": "exact"
+        }
+      ]
+    },
+    {
+      "id": "cnm_225",
+      "name": "一元二次方程解法的选择",
+      "domain": "数与代数",
+      "grade": 9,
+      "semester": "上",
+      "chapter": "九上 第二十五章 一元二次方程 25.2",
+      "type": "procedural",
+      "description": "根据方程特点灵活选用直接开平方、因式分解、配方、公式法。",
+      "mastery_criteria": [
+        "能说明选用方法的理由",
+        "能高效求解"
+      ],
+      "diagnostic_question": {
+        "question": "解方程 3x²=6x，选用什么方法？",
+        "answer": "因式分解法：3x(x-2)=0，x=0 或 2"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.27",
+          "confidence": "exact"
+        }
+      ]
+    },
+    {
+      "id": "cnm_227",
+      "name": "增长率与传播问题",
+      "domain": "数与代数",
+      "grade": 9,
+      "semester": "上",
+      "chapter": "九上 第二十五章 一元二次方程 25.3",
+      "type": "modeling",
+      "description": "用一元二次方程解决平均增长（降低）率、传播扩散等问题，注意检验根的合理性。",
+      "mastery_criteria": [
+        "能列出 a(1+x)²=b 型方程",
+        "能舍去不合题意的根"
+      ],
+      "diagnostic_question": {
+        "question": "月产量两个月从 100 增长到 144，月平均增长率是多少？",
+        "answer": "100(1+x)²=144，x=20%"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.23",
+          "confidence": "exact"
+        },
+        {
+          "id": "cms-2022:4.NA.30",
+          "confidence": "inferred",
+          "note": "解一元二次方程应用题需检验根是否符合实际"
+        }
+      ]
+    },
+    {
+      "id": "cnm_228",
+      "name": "面积与销售利润问题",
+      "domain": "数与代数",
+      "grade": 9,
+      "semester": "上",
+      "chapter": "九上 第二十五章 一元二次方程 25.3",
+      "type": "modeling",
+      "description": "用一元二次方程解决围图形面积、商品销售利润等问题。",
+      "mastery_criteria": [
+        "能画图并找等量关系",
+        "能检验解是否符合实际"
+      ],
+      "diagnostic_question": {
+        "question": "长方形周长 20 cm，面积 24 cm²，求长与宽。",
+        "answer": "设长 x，x(10-x)=24，长 6 cm，宽 4 cm"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.23",
+          "confidence": "exact"
+        },
+        {
+          "id": "cms-2022:4.NA.30",
+          "confidence": "inferred",
+          "note": "解一元二次方程应用题需检验根是否符合实际"
+        }
+      ]
+    },
+    {
+      "id": "cnm_226",
+      "name": "一元二次方程根与系数的关系（拓展）",
+      "domain": "数与代数",
+      "grade": 9,
+      "semester": "上",
+      "chapter": "九上 第二十五章 一元二次方程 拓展",
+      "type": "reasoning",
+      "description": "若 x₁、x₂ 是 ax²+bx+c=0 的两根，则 x₁+x₂=-b/a，x₁x₂=c/a（课标仅要求“了解”，见例67）。",
+      "mastery_criteria": [
+        "能由求根公式推出关系",
+        "能用于求对称式的值"
+      ],
+      "diagnostic_question": {
+        "question": "x²-5x+6=0 两根之和与积分别是多少？",
+        "answer": "5；6"
+      },
+      "external": false,
+      "standards": [
+        {
+          "id": "cms-2022:4.NA.29",
+          "confidence": "exact"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "topicId": "cnm_227",
+      "prerequisiteId": "cnm_p205",
+      "strength": "soft",
+      "reason": "学习「增长率与传播问题」需要先会小学的「百分数的应用」。增长率常用百分数表示，小学已学的百分数知识是基础。"
+    },
+    {
+      "topicId": "cnm_048",
+      "prerequisiteId": "cnm_045",
+      "strength": "hard",
+      "reason": "遵循列方程的一般步骤"
+    },
+    {
+      "topicId": "cnm_148",
+      "prerequisiteId": "cnm_146",
+      "strength": "hard",
+      "reason": "公式由多项式乘法推出"
+    },
+    {
+      "topicId": "cnm_219",
+      "prerequisiteId": "cnm_041",
+      "strength": "hard",
+      "reason": "一元二次方程是由一元一次方程推广而来的，需要先理解一元一次方程的概念"
+    },
+    {
+      "topicId": "cnm_219",
+      "prerequisiteId": "cnm_146",
+      "strength": "soft",
+      "reason": "整理方程需要整式运算"
+    },
+    {
+      "topicId": "cnm_220",
+      "prerequisiteId": "cnm_219",
+      "strength": "hard",
+      "reason": "对象是一元二次方程"
+    },
+    {
+      "topicId": "cnm_220",
+      "prerequisiteId": "cnm_075",
+      "strength": "hard",
+      "reason": "直接开平方法的依据是平方根的意义，需要先会开平方求平方根"
+    },
+    {
+      "topicId": "cnm_221",
+      "prerequisiteId": "cnm_220",
+      "strength": "hard",
+      "reason": "配方后用直接开平方"
+    },
+    {
+      "topicId": "cnm_221",
+      "prerequisiteId": "cnm_148",
+      "strength": "hard",
+      "reason": "配方依据完全平方公式"
+    },
+    {
+      "topicId": "cnm_222",
+      "prerequisiteId": "cnm_221",
+      "strength": "hard",
+      "reason": "求根公式是对一般形式的方程用配方法推导出来的，需要先掌握配方法"
+    },
+    {
+      "topicId": "cnm_222",
+      "prerequisiteId": "cnm_171",
+      "strength": "hard",
+      "reason": "求根公式的结果常含根式，需要会把二次根式化为最简"
+    },
+    {
+      "topicId": "cnm_223",
+      "prerequisiteId": "cnm_222",
+      "strength": "hard",
+      "reason": "判别式来自求根公式"
+    },
+    {
+      "topicId": "cnm_224",
+      "prerequisiteId": "cnm_219",
+      "strength": "hard",
+      "reason": "对象是一元二次方程"
+    },
+    {
+      "topicId": "cnm_224",
+      "prerequisiteId": "cnm_154",
+      "strength": "hard",
+      "reason": "因式分解法解方程要先把方程左边分解因式，需要先会综合运用因式分解"
+    },
+    {
+      "topicId": "cnm_225",
+      "prerequisiteId": "cnm_222",
+      "strength": "hard",
+      "reason": "公式法是解一元二次方程的通用方法，选择解法时需要先掌握公式法"
+    },
+    {
+      "topicId": "cnm_225",
+      "prerequisiteId": "cnm_224",
+      "strength": "hard",
+      "reason": "因式分解法为常用方法"
+    },
+    {
+      "topicId": "cnm_226",
+      "prerequisiteId": "cnm_222",
+      "strength": "hard",
+      "reason": "根与系数的关系可以由求根公式得到，需要先掌握公式法与求根公式"
+    },
+    {
+      "topicId": "cnm_226",
+      "prerequisiteId": "cnm_223",
+      "strength": "soft",
+      "reason": "使用根与系数关系前要先保证方程有实数根，需要根的判别式"
+    },
+    {
+      "topicId": "cnm_227",
+      "prerequisiteId": "cnm_225",
+      "strength": "hard",
+      "reason": "增长率与传播问题要解一元二次方程，需要先会选择合适的解法"
+    },
+    {
+      "topicId": "cnm_227",
+      "prerequisiteId": "cnm_045",
+      "strength": "hard",
+      "reason": "列一元二次方程解应用题沿用审题、设未知数、列方程、求解、检验、作答的建模步骤"
+    },
+    {
+      "topicId": "cnm_228",
+      "prerequisiteId": "cnm_225",
+      "strength": "hard",
+      "reason": "面积与利润问题要解一元二次方程，需要先会选择合适的解法"
+    },
+    {
+      "topicId": "cnm_228",
+      "prerequisiteId": "cnm_045",
+      "strength": "hard",
+      "reason": "列一元二次方程解应用题沿用审题、设未知数、列方程、求解、检验、作答的建模步骤"
+    },
+    {
+      "topicId": "cnm_228",
+      "prerequisiteId": "cnm_048",
+      "strength": "soft",
+      "reason": "利润问题的数量关系可以类比一元一次方程中的销售与利润问题"
+    }
+  ],
+  "questions": [
+    {
+      "id": "cnm_219_q1",
+      "topicId": "cnm_219",
+      "difficulty": "basic",
+      "type": "numeric",
+      "prompt": "x²-5x+6=0 的二次项系数、一次项系数、常数项分别是什么？（依次作答，用逗号隔开）",
+      "answer": "1，-5，6",
+      "explanation": "方程已是一般形式 ax²+bx+c=0，对照得 a=1，b=-5，c=6。注意一次项系数带符号。",
+      "verify": "[1, -5, 6]"
+    },
+    {
+      "id": "cnm_219_q2",
+      "topicId": "cnm_219",
+      "difficulty": "basic",
+      "type": "choice",
+      "prompt": "下列方程中，是一元二次方程的是哪一个？",
+      "choices": [
+        {
+          "key": "A",
+          "text": "x²+2x=x²-1"
+        },
+        {
+          "key": "B",
+          "text": "x²+1/x=2"
+        },
+        {
+          "key": "C",
+          "text": "x²+y=1"
+        },
+        {
+          "key": "D",
+          "text": "3x²-2x=1"
+        }
+      ],
+      "answer": "D",
+      "explanation": "A 两边的 x² 抵消后是一元一次方程；B 含分式 1/x，不是整式方程；C 含两个未知数；D 整理为 3x²-2x-1=0，是一元二次方程。"
+    },
+    {
+      "id": "cnm_219_q3",
+      "topicId": "cnm_219",
+      "difficulty": "standard",
+      "type": "numeric",
+      "prompt": "把方程 2x(x-1)=3-x 化为一般形式 ax²+bx+c=0（a>0），依次写出 a，b，c（用逗号隔开）。",
+      "answer": "2，-1，-3",
+      "explanation": "去括号得 2x²-2x=3-x，移项合并得 2x²-x-3=0，所以 a=2，b=-1，c=-3。",
+      "verify": "[2, -2+1, -3]"
+    },
+    {
+      "id": "cnm_219_q4",
+      "topicId": "cnm_219",
+      "difficulty": "advanced",
+      "type": "numeric",
+      "prompt": "关于 x 的方程 (m-1)x^(|m|+1)+2x-3=0 是一元二次方程，求 m 的值。",
+      "answer": "-1",
+      "explanation": "由 |m|+1=2 得 m=±1；又二次项系数 m-1≠0，即 m≠1，所以 m=-1。",
+      "verify": "[m for m in range(-5,6) if abs(m)+1==2 and m-1!=0][0]"
+    },
+    {
+      "id": "cnm_220_q1",
+      "topicId": "cnm_220",
+      "difficulty": "basic",
+      "type": "numeric",
+      "prompt": "解方程 (x-1)²=9。（两个根用逗号隔开）",
+      "answer": "4，-2",
+      "unordered": true,
+      "explanation": "两边开平方得 x-1=3 或 x-1=-3，所以 x=4 或 x=-2。",
+      "verify": "[1+isqrt(9), 1-isqrt(9)]"
+    },
+    {
+      "id": "cnm_220_q2",
+      "topicId": "cnm_220",
+      "difficulty": "basic",
+      "type": "numeric",
+      "prompt": "解方程 x²=49。（两个根用逗号隔开）",
+      "answer": "7，-7",
+      "unordered": true,
+      "explanation": "49 的平方根是 ±7，所以 x=7 或 x=-7。",
+      "verify": "[isqrt(49), -isqrt(49)]"
+    },
+    {
+      "id": "cnm_220_q3",
+      "topicId": "cnm_220",
+      "difficulty": "standard",
+      "type": "numeric",
+      "prompt": "解方程 4(x+2)²=25。（两个根用逗号隔开，写成最简分数或整数）",
+      "answer": "1/2，-9/2",
+      "unordered": true,
+      "explanation": "先化为 (x+2)²=25/4，开平方得 x+2=±5/2，所以 x=1/2 或 x=-9/2。",
+      "verify": "[Fraction(5,2)-2, -Fraction(5,2)-2]"
+    },
+    {
+      "id": "cnm_220_q4",
+      "topicId": "cnm_220",
+      "difficulty": "advanced",
+      "type": "choice",
+      "prompt": "关于 x 的方程 (x-2)²=k-3 有两个不相等的实数根，则 k 的取值范围是？",
+      "choices": [
+        {
+          "key": "A",
+          "text": "k≥3"
+        },
+        {
+          "key": "B",
+          "text": "k<3"
+        },
+        {
+          "key": "C",
+          "text": "k>3"
+        },
+        {
+          "key": "D",
+          "text": "k>2"
+        }
+      ],
+      "answer": "C",
+      "explanation": "(x-2)² 非负。要有两个不相等的实根，需 k-3>0，即 k>3；k=3 时只有一个根，k<3 时无实根。"
+    },
+    {
+      "id": "cnm_221_q1",
+      "topicId": "cnm_221",
+      "difficulty": "standard",
+      "type": "choice",
+      "prompt": "用配方法解 x²-4x-1=0。下列配方及结果正确的是哪一个？",
+      "choices": [
+        {
+          "key": "A",
+          "text": "(x-2)²=3，x=2±√3"
+        },
+        {
+          "key": "B",
+          "text": "(x+2)²=5，x=-2±√5"
+        },
+        {
+          "key": "C",
+          "text": "(x-2)²=5，x=2±√5"
+        },
+        {
+          "key": "D",
+          "text": "(x-4)²=17，x=4±√17"
+        }
+      ],
+      "answer": "C",
+      "explanation": "移项 x²-4x=1，两边加 (4/2)²=4 得 (x-2)²=5，所以 x=2±√5。A 漏加了常数项的处理，B 符号错，D 配方时加错了数。"
+    },
+    {
+      "id": "cnm_221_q2",
+      "topicId": "cnm_221",
+      "difficulty": "basic",
+      "type": "numeric",
+      "prompt": "要把 x²+6x 配成完全平方式，需要加上的常数是多少？",
+      "answer": "9",
+      "explanation": "加上一次项系数一半的平方：(6/2)²=9，得 x²+6x+9=(x+3)²。",
+      "verify": "(6//2)**2"
+    },
+    {
+      "id": "cnm_221_q3",
+      "topicId": "cnm_221",
+      "difficulty": "standard",
+      "type": "numeric",
+      "prompt": "用配方法解方程 x²+6x-7=0。（两个根用逗号隔开）",
+      "answer": "1，-7",
+      "unordered": true,
+      "explanation": "移项 x²+6x=7，两边加 9 得 (x+3)²=16，x+3=±4，所以 x=1 或 x=-7。",
+      "verify": "[-3+isqrt(16), -3-isqrt(16)]"
+    },
+    {
+      "id": "cnm_221_q4",
+      "topicId": "cnm_221",
+      "difficulty": "advanced",
+      "type": "numeric",
+      "prompt": "把 2x²-8x+1=0 配方成 2(x-m)²=n 的形式，依次求 m 与 n 的值（用逗号隔开）。",
+      "answer": "2，7",
+      "explanation": "2x²-8x=-1，即 2(x²-4x)=-1，括号内加 4 的同时右边加 2×4=8，得 2(x-2)²=7，所以 m=2，n=7。",
+      "verify": "[8//(2*2), 2*(8//(2*2))**2-1]"
+    },
+    {
+      "id": "cnm_222_q1",
+      "topicId": "cnm_222",
+      "difficulty": "standard",
+      "type": "numeric",
+      "prompt": "用公式法解 2x²-3x-2=0。（两个根用逗号隔开）",
+      "answer": "2，-1/2",
+      "unordered": true,
+      "explanation": "a=2，b=-3，c=-2，b²-4ac=9+16=25，x=(3±5)/4，所以 x=2 或 x=-1/2。",
+      "verify": "roots2(2,-3,-2)"
+    },
+    {
+      "id": "cnm_222_q2",
+      "topicId": "cnm_222",
+      "difficulty": "basic",
+      "type": "numeric",
+      "prompt": "用公式法解方程 x²-x-6=0。（两个根用逗号隔开）",
+      "answer": "3，-2",
+      "unordered": true,
+      "explanation": "a=1，b=-1，c=-6，b²-4ac=1+24=25，x=(1±5)/2，所以 x=3 或 x=-2。",
+      "verify": "roots2(1,-1,-6)"
+    },
+    {
+      "id": "cnm_222_q3",
+      "topicId": "cnm_222",
+      "difficulty": "standard",
+      "type": "choice",
+      "prompt": "用求根公式解方程 3x²+5x-1=0，结果正确的是哪一个？",
+      "choices": [
+        {
+          "key": "A",
+          "text": "x=(5±√37)/6"
+        },
+        {
+          "key": "B",
+          "text": "x=(-5±√13)/6"
+        },
+        {
+          "key": "C",
+          "text": "x=(-5±√37)/3"
+        },
+        {
+          "key": "D",
+          "text": "x=(-5±√37)/6"
+        }
+      ],
+      "answer": "D",
+      "explanation": "a=3，b=5，c=-1，b²-4ac=25+12=37，x=(-5±√37)/(2×3)=(-5±√37)/6。A 漏了 -b 的负号，B 算错判别式，C 分母应为 2a=6。"
+    },
+    {
+      "id": "cnm_222_q4",
+      "topicId": "cnm_222",
+      "difficulty": "advanced",
+      "type": "numeric",
+      "prompt": "用公式法解方程 (2x-1)(x+1)=2。（两个根用逗号隔开）",
+      "answer": "1，-3/2",
+      "unordered": true,
+      "explanation": "展开得 2x²+x-1=2，化为 2x²+x-3=0。b²-4ac=1+24=25，x=(-1±5)/4，所以 x=1 或 x=-3/2。",
+      "verify": "roots2(2,1,-3)"
+    },
+    {
+      "id": "cnm_223_q1",
+      "topicId": "cnm_223",
+      "difficulty": "standard",
+      "type": "choice",
+      "prompt": "x²-4x+k=0 有两个不相等实根，求 k 的范围。下列正确的是哪一个？",
+      "choices": [
+        {
+          "key": "A",
+          "text": "k>4"
+        },
+        {
+          "key": "B",
+          "text": "k≥4"
+        },
+        {
+          "key": "C",
+          "text": "k<4"
+        },
+        {
+          "key": "D",
+          "text": "k≤4"
+        }
+      ],
+      "answer": "C",
+      "explanation": "两个不相等实根需 Δ=16-4k>0，解得 k<4。k=4 时是两个相等的根，不符合“不相等”。"
+    },
+    {
+      "id": "cnm_223_q2",
+      "topicId": "cnm_223",
+      "difficulty": "basic",
+      "type": "numeric",
+      "prompt": "求方程 x²-3x-4=0 的判别式 b²-4ac 的值。",
+      "answer": "25",
+      "explanation": "a=1，b=-3，c=-4，Δ=(-3)²-4×1×(-4)=9+16=25。",
+      "verify": "(-3)**2-4*1*(-4)"
+    },
+    {
+      "id": "cnm_223_q3",
+      "topicId": "cnm_223",
+      "difficulty": "standard",
+      "type": "choice",
+      "prompt": "方程 2x²-3x+5=0 的根的情况是？",
+      "choices": [
+        {
+          "key": "A",
+          "text": "没有实数根"
+        },
+        {
+          "key": "B",
+          "text": "有两个不相等的实数根"
+        },
+        {
+          "key": "C",
+          "text": "有两个相等的实数根"
+        }
+      ],
+      "answer": "A",
+      "explanation": "Δ=(-3)²-4×2×5=9-40=-31<0，所以方程没有实数根。"
+    },
+    {
+      "id": "cnm_223_q4",
+      "topicId": "cnm_223",
+      "difficulty": "advanced",
+      "type": "numeric",
+      "prompt": "关于 x 的一元二次方程 kx²-2x+1=0 有两个不相等的实数根，求整数 k 的最大值。",
+      "answer": "-1",
+      "explanation": "需 k≠0 且 Δ=4-4k>0，得 k<1 且 k≠0。k<1 的最大整数是 0，但 k≠0，所以最大整数为 -1。",
+      "verify": "max([k for k in range(-10,10) if k!=0 and 4-4*k>0])"
+    },
+    {
+      "id": "cnm_224_q1",
+      "topicId": "cnm_224",
+      "difficulty": "basic",
+      "type": "numeric",
+      "prompt": "解方程 x²-5x+6=0。（两个根用逗号隔开）",
+      "answer": "2，3",
+      "unordered": true,
+      "explanation": "左边分解为 (x-2)(x-3)=0，所以 x=2 或 x=3。",
+      "verify": "roots2(1,-5,6)"
+    },
+    {
+      "id": "cnm_224_q2",
+      "topicId": "cnm_224",
+      "difficulty": "basic",
+      "type": "numeric",
+      "prompt": "解方程 x²+4x=0。（两个根用逗号隔开）",
+      "answer": "0，-4",
+      "unordered": true,
+      "explanation": "提公因式得 x(x+4)=0，所以 x=0 或 x=-4。",
+      "verify": "roots2(1,4,0)"
+    },
+    {
+      "id": "cnm_224_q3",
+      "topicId": "cnm_224",
+      "difficulty": "standard",
+      "type": "numeric",
+      "prompt": "解方程 2x²-5x-3=0。（两个根用逗号隔开）",
+      "answer": "3，-1/2",
+      "unordered": true,
+      "explanation": "十字相乘分解得 (2x+1)(x-3)=0，所以 x=-1/2 或 x=3。",
+      "verify": "roots2(2,-5,-3)"
+    },
+    {
+      "id": "cnm_224_q4",
+      "topicId": "cnm_224",
+      "difficulty": "advanced",
+      "type": "numeric",
+      "prompt": "解方程 (x-2)²=3(x-2)。（两个根用逗号隔开；注意不要两边同除以 x-2）",
+      "answer": "2，5",
+      "unordered": true,
+      "explanation": "移项得 (x-2)²-3(x-2)=0，提公因式 (x-2)(x-2-3)=0，即 (x-2)(x-5)=0，所以 x=2 或 x=5。两边同除以 x-2 会丢掉根 x=2。",
+      "verify": "roots2(1,-7,10)"
+    },
+    {
+      "id": "cnm_225_q1",
+      "topicId": "cnm_225",
+      "difficulty": "basic",
+      "type": "choice",
+      "prompt": "解方程 3x²=6x，选用什么方法？下列最合适的是哪一个？",
+      "choices": [
+        {
+          "key": "A",
+          "text": "因式分解法"
+        },
+        {
+          "key": "B",
+          "text": "直接开平方法"
+        },
+        {
+          "key": "C",
+          "text": "配方法"
+        },
+        {
+          "key": "D",
+          "text": "公式法"
+        }
+      ],
+      "answer": "A",
+      "explanation": "移项得 3x²-6x=0，提公因式得 3x(x-2)=0，x=0 或 2，用因式分解法最简便。"
+    },
+    {
+      "id": "cnm_225_q2",
+      "topicId": "cnm_225",
+      "difficulty": "basic",
+      "type": "numeric",
+      "prompt": "用最简便的方法解方程 (x+1)²=16。（两个根用逗号隔开）",
+      "answer": "3，-5",
+      "unordered": true,
+      "explanation": "左边是完全平方，直接开平方：x+1=±4，所以 x=3 或 x=-5。",
+      "verify": "[-1+isqrt(16), -1-isqrt(16)]"
+    },
+    {
+      "id": "cnm_225_q3",
+      "topicId": "cnm_225",
+      "difficulty": "standard",
+      "type": "choice",
+      "prompt": "下列方程中，最适合用直接开平方法求解的是哪一个？",
+      "choices": [
+        {
+          "key": "A",
+          "text": "x²-4x=5"
+        },
+        {
+          "key": "B",
+          "text": "(2x-1)²=9"
+        },
+        {
+          "key": "C",
+          "text": "x²+3x-1=0"
+        },
+        {
+          "key": "D",
+          "text": "x(x-2)=3x"
+        }
+      ],
+      "answer": "B",
+      "explanation": "B 已是 (含 x 的式子)²=常数 的形式，可直接开平方；D 适合因式分解，A、C 适合配方或公式法。"
+    },
+    {
+      "id": "cnm_225_q4",
+      "topicId": "cnm_225",
+      "difficulty": "advanced",
+      "type": "numeric",
+      "prompt": "解方程 (2x-3)²=(x+1)²。（两个根用逗号隔开，写成整数或最简分数）",
+      "answer": "4，2/3",
+      "unordered": true,
+      "explanation": "两边开平方得 2x-3=x+1 或 2x-3=-(x+1)。前者 x=4，后者 3x=2，x=2/3。也可移项后用平方差因式分解。",
+      "verify": "roots2(3,-14,8)"
+    },
+    {
+      "id": "cnm_226_q1",
+      "topicId": "cnm_226",
+      "difficulty": "basic",
+      "type": "numeric",
+      "prompt": "x²-5x+6=0 两根之和与积分别是多少？（依次作答，用逗号隔开）",
+      "answer": "5，6",
+      "explanation": "a=1，b=-5，c=6，两根之和 -b/a=5，两根之积 c/a=6（也可直接解出根 2 和 3 验证）。",
+      "verify": "[-Fraction(-5,1), Fraction(6,1)]"
+    },
+    {
+      "id": "cnm_226_q2",
+      "topicId": "cnm_226",
+      "difficulty": "basic",
+      "type": "numeric",
+      "prompt": "方程 2x²-6x+1=0 有两个实数根，求两根之和与两根之积。（依次作答，用逗号隔开，积写成分数）",
+      "answer": "3，1/2",
+      "explanation": "a=2，b=-6，c=1，和 -b/a=6/2=3，积 c/a=1/2。",
+      "verify": "[-Fraction(-6,2), Fraction(1,2)]"
+    },
+    {
+      "id": "cnm_226_q3",
+      "topicId": "cnm_226",
+      "difficulty": "standard",
+      "type": "numeric",
+      "prompt": "x1、x2 是方程 x²-3x-5=0 的两个根，求 x1²+x2² 的值。",
+      "answer": "19",
+      "explanation": "x1+x2=3，x1x2=-5，x1²+x2²=(x1+x2)²-2x1x2=9+10=19。",
+      "verify": "3**2-2*(-5)"
+    },
+    {
+      "id": "cnm_226_q4",
+      "topicId": "cnm_226",
+      "difficulty": "standard",
+      "type": "numeric",
+      "prompt": "关于 x 的方程 x²+kx+6=0 的一个根是 2，求 k 的值和另一个根。（依次作答，用逗号隔开）",
+      "answer": "-5，3",
+      "explanation": "由两根之积 6，另一根为 6÷2=3；两根之和 2+3=5=-k，所以 k=-5。",
+      "verify": "[-(2+6//2), 6//2]"
+    },
+    {
+      "id": "cnm_226_q5",
+      "topicId": "cnm_226",
+      "difficulty": "advanced",
+      "type": "numeric",
+      "prompt": "x1、x2 是方程 2x²-5x-3=0 的两个根，求 1/x1+1/x2 的值。（写成最简分数）",
+      "answer": "-5/3",
+      "explanation": "x1+x2=5/2，x1x2=-3/2，1/x1+1/x2=(x1+x2)/(x1x2)=(5/2)÷(-3/2)=-5/3。",
+      "verify": "Fraction(5,2)/Fraction(-3,2)"
+    },
+    {
+      "id": "cnm_227_q1",
+      "topicId": "cnm_227",
+      "difficulty": "standard",
+      "type": "numeric",
+      "prompt": "月产量两个月从 100 增长到 144，月平均增长率是多少？（列方程 100(1+x)²=144 求解，答案用百分数的数值作答，如 15% 写成 15）",
+      "answer": "20",
+      "explanation": "100(1+x)²=144，(1+x)²=1.44，1+x=±1.2，x=0.2 或 x=-2.2（舍去），所以月平均增长率为 20%。",
+      "verify": "(Fraction(isqrt(144),isqrt(100))-1)*100"
+    },
+    {
+      "id": "cnm_227_q2",
+      "topicId": "cnm_227",
+      "difficulty": "basic",
+      "type": "choice",
+      "prompt": "某校图书馆藏书两年内从 5 万册增加到 7.2 万册，设平均每年的增长率为 x，可列方程为？",
+      "choices": [
+        {
+          "key": "A",
+          "text": "5(1+x)²=7.2"
+        },
+        {
+          "key": "B",
+          "text": "5(1+2x)=7.2"
+        },
+        {
+          "key": "C",
+          "text": "5+x²=7.2"
+        },
+        {
+          "key": "D",
+          "text": "5(1+x)=7.2"
+        }
+      ],
+      "answer": "A",
+      "explanation": "每年按同一增长率增长，两年后为 5(1+x)²，所以方程是 5(1+x)²=7.2。B 把复利当成了单利。"
+    },
+    {
+      "id": "cnm_227_q3",
+      "topicId": "cnm_227",
+      "difficulty": "standard",
+      "type": "numeric",
+      "prompt": "某商品原价 50 元，连续两次降价，每次降价的百分率相同，现价 40.5 元。求每次降价的百分率。（用百分数的数值作答，如 15% 写成 15）",
+      "answer": "10",
+      "explanation": "50(1-x)²=40.5，(1-x)²=0.81，1-x=±0.9，x=0.1 或 x=1.9（降价率不能大于 1，舍去），所以每次降价 10%。",
+      "verify": "(1-Fraction(isqrt(81),isqrt(100)))*100"
+    },
+    {
+      "id": "cnm_227_q4",
+      "topicId": "cnm_227",
+      "difficulty": "advanced",
+      "type": "numeric",
+      "prompt": "有一个人患流感，经过两轮传染后共有 121 人患流感（含最初的患者），每轮传染中平均一个人传染几个人？",
+      "answer": "10",
+      "explanation": "设每轮一人传染 x 人，则 1+x+x(1+x)=121，即 (1+x)²=121，1+x=±11，x=10 或 x=-12（舍去）。",
+      "verify": "isqrt(121)-1"
+    },
+    {
+      "id": "cnm_228_q1",
+      "topicId": "cnm_228",
+      "difficulty": "standard",
+      "type": "numeric",
+      "prompt": "长方形周长 20 cm，面积 24 cm²，求长与宽。（单位：cm，长大于宽，依次写长、宽，用逗号隔开）",
+      "answer": "6，4",
+      "explanation": "设长为 x，则宽为 10-x，x(10-x)=24，x²-10x+24=0，x=6 或 4。长大于宽，所以长 6，宽 4。",
+      "verify": "[max(roots2(1,-10,24)), min(roots2(1,-10,24))]"
+    },
+    {
+      "id": "cnm_228_q2",
+      "topicId": "cnm_228",
+      "difficulty": "basic",
+      "type": "numeric",
+      "prompt": "一个正方形的边长增加 3 cm 后，面积变为 49 cm²，求原正方形的边长。（单位：cm）",
+      "answer": "4",
+      "explanation": "设原边长为 x，(x+3)²=49，x+3=±7，x=4 或 x=-10（舍去），所以原边长为 4 cm。",
+      "verify": "isqrt(49)-3"
+    },
+    {
+      "id": "cnm_228_q3",
+      "topicId": "cnm_228",
+      "difficulty": "standard",
+      "type": "numeric",
+      "prompt": "用 20 m 长的篱笆，一面靠墙（墙足够长）围成面积为 48 m² 的矩形菜园，求垂直于墙的边长。（单位：m，有两个答案，用逗号隔开）",
+      "answer": "4，6",
+      "unordered": true,
+      "explanation": "设垂直于墙的边长为 x，则平行于墙的边为 20-2x，x(20-2x)=48，x²-10x+24=0，x=4 或 6，两个值都使 20-2x>0，都符合题意。",
+      "verify": "roots2(1,-10,24)"
+    },
+    {
+      "id": "cnm_228_q4",
+      "topicId": "cnm_228",
+      "difficulty": "advanced",
+      "type": "numeric",
+      "prompt": "某商品每件进价 40 元，按 60 元出售时每天可售 100 件；每件每降价 1 元，每天多售 10 件。若每天要获利 2160 元，且要让顾客得到更多实惠，每件应降价多少元？（单位：元）",
+      "answer": "8",
+      "explanation": "设降价 x 元，(60-x-40)(100+10x)=2160，化简 x²-10x+16=0，x=2 或 8。要让顾客得到更多实惠，应取降价更多的 8。",
+      "verify": "max(roots2(1,-10,16))"
+    }
+  ]
+}
